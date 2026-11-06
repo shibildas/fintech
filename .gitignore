@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# SQLite Databases & WAL files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Build, TypeScript & Coverage artifacts
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# OS & Editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

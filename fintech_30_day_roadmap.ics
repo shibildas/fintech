@@ -1,0 +1,952 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Antigravity//Payments and Fintech 30-Day Mastery Roadmap//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Fintech & Payments 30-Day Mastery
+X-WR-TIMEZONE:Asia/Kolkata
+BEGIN:VTIMEZONE
+TZID:Asia/Kolkata
+BEGIN:STANDARD
+TZOFFSETFROM:+0530
+TZOFFSETTO:+0530
+TZNAME:IST
+DTSTART:19700101T000000
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:fintech-day01-morning-18f850b0@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261105T090000
+DTEND;TZID=Asia/Kolkata:20261105T133000
+SUMMARY:[Fintech D01] Double-Entry Ledger\, Paise Math & ISO 8583 Core (Project 1: UPI Switch)
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 1 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Why floats fail in money\; integer paise (Rule 1)\; append-only double-entry debit/credit postings summing to 0 (Rules 2-3)\; derived available balances excluding holds\; ISO 8583 message fields (MTI 0200/0210/0420/0430/0100/0110\, STAN\, RRN\, Response Codes) & reference chains (Rule 4).\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Scaffold shared core library across all 4 projects: HMAC-SHA256 service-to-service signing with 5-min timestamp replay protection (Rule 9)\, strict Idempotency Key middleware returning 409 on payload mismatch (Rule 5)\, immutable Audit Log table (Rule 8)\, and ISO 8583 JSON message validator.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D01] Double-Entry Ledger\, Paise Math & ISO 8583 Core (Project 1: UPI Switch)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day01-afternoon-7c4de007@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261105T143000
+DTEND;TZID=Asia/Kolkata:20261105T173000
+SUMMARY:[Fintech Build & Test D01] Double-Entry Ledger\, Paise Math & ISO 8583 Core — Implementation & Verification
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 1 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Scaffold shared core library across all 4 projects: HMAC-SHA256 service-to-service signing with 5-min timestamp replay protection (Rule 9)\, strict Idempotency Key middleware returning 409 on payload mismatch (Rule 5)\, immutable Audit Log table (Rule 8)\, and ISO 8583 JSON message validator.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day01-dsa-d9704836@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261105T180000
+DTEND;TZID=Asia/Kolkata:20261105T193000
+SUMMARY:[Fintech DSA D01] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Hash maps\, concurrency-safe deduplication caches & LRU design.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day02-morning-db052f45@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261106T090000
+DTEND;TZID=Asia/Kolkata:20261106T133000
+SUMMARY:[Fintech D02] Bank Core Simulators (x3) & PSP VPA Directory (x2) (Project 1: UPI Switch)
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 2 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: NPCI UPI architecture (PSP\, TPAP\, VPA handles like anita@psp1\, masked account discovery XXXX4521\, Rule 10 PII masking) and participant registry health states.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: 3 Bank Core Simulators (same codebase\, separate config: BANKA\, BANKB\, BANKC) with accounts\, IFSC branch codes\, hashed UPI PIN verification (3-strike account freeze)\, per-txn/daily limits\, double-entry postings table\, and 2 PSP Simulators (PSP1\, PSP2) exposing GET /vpa/{handle}.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D02] Bank Core Simulators (x3) & PSP VPA Directory (x2) (Project 1: UPI Switch)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day02-afternoon-0048333e@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261106T143000
+DTEND;TZID=Asia/Kolkata:20261106T173000
+SUMMARY:[Fintech Build & Test D02] Bank Core Simulators (x3) & PSP VPA Directory (x2) — Implementation & Verification
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 2 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: 3 Bank Core Simulators (same codebase\, separate config: BANKA\, BANKB\, BANKC) with accounts\, IFSC branch codes\, hashed UPI PIN verification (3-strike account freeze)\, per-txn/daily limits\, double-entry postings table\, and 2 PSP Simulators (PSP1\, PSP2) exposing GET /vpa/{handle}.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day02-dsa-2cc90a5d@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261106T180000
+DTEND;TZID=Asia/Kolkata:20261106T193000
+SUMMARY:[Fintech DSA D02] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Trie / prefix trees for handle & routing lookup\; string parsing.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day03-morning-c50492c4@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261107T090000
+DTEND;TZID=Asia/Kolkata:20261107T133000
+SUMMARY:[Fintech D03] Switch 6-Hop Pay Flow & Exactly-Once RRN Debit (Project 1: UPI Switch)
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 3 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: The 6-hop pay lifecycle (Client -> Payer PSP -> Switch -> Remitter Bank -> Switch -> Beneficiary Bank -> Payer PSP -> Client)\, database row locking\, and unique RRN constraints for exactly-once debit.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Central Switch POST /pay (MTI 0200/0210) & Balance Enquiry (MTI 0100/0110). Enforce strict state machine transitions (Rule 6). Write the 5-concurrent duplicate submission test proving 1 RRN = 1 debit + 1 credit.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D03] Switch 6-Hop Pay Flow & Exactly-Once RRN Debit (Project 1: UPI Switch)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day03-afternoon-b4d6aa94@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261107T143000
+DTEND;TZID=Asia/Kolkata:20261107T173000
+SUMMARY:[Fintech Build & Test D03] Switch 6-Hop Pay Flow & Exactly-Once RRN Debit — Implementation & Verification
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 3 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Central Switch POST /pay (MTI 0200/0210) & Balance Enquiry (MTI 0100/0110). Enforce strict state machine transitions (Rule 6). Write the 5-concurrent duplicate submission test proving 1 RRN = 1 debit + 1 credit.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day03-dsa-ccd88ae7@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261107T180000
+DTEND;TZID=Asia/Kolkata:20261107T193000
+SUMMARY:[Fintech DSA D03] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Graph BFS/DFS & shortest path in payment network topologies.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day04-morning-57f126a2@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261108T090000
+DTEND;TZID=Asia/Kolkata:20261108T133000
+SUMMARY:[Fintech D04] Timeouts\, Status Checks (CHK)\, 0420 Reversals & Deemed-Approved (Project 1: UPI Switch)
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 4 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Rule 7 (A timeout is an unknown outcome\, never an immediate failure)\, status check polling (CHK)\, credit-leg retry schedules\, MTI 0420 reversals\, and deemed-approved conflicts (late 0210 00 after timeout/reversal).\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Configurable 5s bank timeout + CHK probe\; DEBIT_SUCCESS_CREDIT_PENDING retry worker (Redis Streams/Kafka)\; MTI 0420 auto-reversal on credit deadline expiry\; deemed-approved exception flagging\; mid-transaction crash recovery on Switch startup.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D04] Timeouts\, Status Checks (CHK)\, 0420 Reversals & Deemed-Approved (Project 1: UPI Switch)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day04-afternoon-5c54775f@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261108T143000
+DTEND;TZID=Asia/Kolkata:20261108T173000
+SUMMARY:[Fintech Build & Test D04] Timeouts\, Status Checks (CHK)\, 0420 Reversals & Deemed-Approved — Implementation & Verification
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 4 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Configurable 5s bank timeout + CHK probe\; DEBIT_SUCCESS_CREDIT_PENDING retry worker (Redis Streams/Kafka)\; MTI 0420 auto-reversal on credit deadline expiry\; deemed-approved exception flagging\; mid-transaction crash recovery on Switch startup.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day04-dsa-b8ad4860@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261108T180000
+DTEND;TZID=Asia/Kolkata:20261108T193000
+SUMMARY:[Fintech DSA D04] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: State machines\, exponential backoff timers & priority queues (min-heap).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day05-morning-f0202adf@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261109T090000
+DTEND;TZID=Asia/Kolkata:20261109T133000
+SUMMARY:[Fintech D05] T+1 Net Settlement Engine & Immutable CSV Manifests (Project 1: UPI Switch)
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 5 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Multilateral net settlement (why clearing houses net payables/receivables across banks so sum across all banks = 0)\, cut-off windows (23:00)\, and Switch-authoritative clock skew protection.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: T+1 Settlement Engine (POST /cycles/{id}/run\, GET /cycles/{id}/files) producing immutable versioned CSVs: per-bank net summary\, per-bank RRN detail file\, and cycle manifest with header/trailer record count & SHA-256 body hash.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D05] T+1 Net Settlement Engine & Immutable CSV Manifests (Project 1: UPI Switch)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day05-afternoon-d4624ec4@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261109T143000
+DTEND;TZID=Asia/Kolkata:20261109T173000
+SUMMARY:[Fintech Build & Test D05] T+1 Net Settlement Engine & Immutable CSV Manifests — Implementation & Verification
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 5 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: T+1 Settlement Engine (POST /cycles/{id}/run\, GET /cycles/{id}/files) producing immutable versioned CSVs: per-bank net summary\, per-bank RRN detail file\, and cycle manifest with header/trailer record count & SHA-256 body hash.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day05-dsa-c93f5a24@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261109T180000
+DTEND;TZID=Asia/Kolkata:20261109T193000
+SUMMARY:[Fintech DSA D05] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Interval merging\, sweeping line algorithms (settlement windows) & matrix zero-sum verification.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day06-morning-6fc7a4c2@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261110T090000
+DTEND;TZID=Asia/Kolkata:20261110T133000
+SUMMARY:[Fintech D06] Three-Way Reconciliation Engine & Switch Admin Console (Project 1: UPI Switch)
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 6 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: 3-Way Reconciliation matching Switch Log vs Remitter Bank EOD Report vs Beneficiary Bank EOD Report. Exception classes: MATCHED\, MISSING_AT_REMITTER\, MISSING_AT_BENEFICIARY\, MISSING_AT_SWITCH\, AMOUNT_MISMATCH\, STATUS_MISMATCH.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Bank EOD report generator\, 3-Way Reconciliation matcher\, and Web Admin Console (RBAC operator/admin\, live 6-hop trace feed\, participant p95/timeout dashboard\, chaos injection controls PUT /participants/{id}/chaos\, and exception resolution actions).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D06] Three-Way Reconciliation Engine & Switch Admin Console (Project 1: UPI Switch)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day06-afternoon-9480e2c0@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261110T143000
+DTEND;TZID=Asia/Kolkata:20261110T173000
+SUMMARY:[Fintech Build & Test D06] Three-Way Reconciliation Engine & Switch Admin Console — Implementation & Verification
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 6 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Bank EOD report generator\, 3-Way Reconciliation matcher\, and Web Admin Console (RBAC operator/admin\, live 6-hop trace feed\, participant p95/timeout dashboard\, chaos injection controls PUT /participants/{id}/chaos\, and exception resolution actions).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day06-dsa-b9780423@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261110T180000
+DTEND;TZID=Asia/Kolkata:20261110T193000
+SUMMARY:[Fintech DSA D06] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Two-pointer / hash-join reconciliation algorithms & diff classification.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day07-morning-1891d80d@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261111T090000
+DTEND;TZID=Asia/Kolkata:20261111T133000
+SUMMARY:[Fintech D07] MILESTONE 1: Project 1 Load Test (100 TPS)\, Chaos Verification & Demo (Project 1: UPI Switch)
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 7 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Review all 10 Project 1 Acceptance Tests\, Prometheus metrics (/metrics\, /health)\, and interview defense: 'Why is exactly-once debit hard?' and 'How does 3-way reconciliation catch deemed-approved conflicts?'\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nDeliver: Run 100 TPS end-to-end load test across 3 banks (p95 < 1s)\, execute all 10 acceptance tests in CI (GitHub Actions + Playwright)\, check in sample settlement & reconciliation CSVs\, write Project 1 README\, and record 5-min demo video.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D07] MILESTONE 1: Project 1 Load Test (100 TPS)\, Chaos Verification & Demo (Project 1: UPI Switch)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day07-afternoon-a2bb9c90@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261111T143000
+DTEND;TZID=Asia/Kolkata:20261111T173000
+SUMMARY:[Fintech Build & Test D07] MILESTONE 1: Project 1 Load Test (100 TPS)\, Chaos Verification & Demo — Implementation & Verification
+DESCRIPTION:PROJECT: Project 1: UPI Switch (Day 7 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nDeliver: Run 100 TPS end-to-end load test across 3 banks (p95 < 1s)\, execute all 10 acceptance tests in CI (GitHub Actions + Playwright)\, check in sample settlement & reconciliation CSVs\, write Project 1 README\, and record 5-min demo video.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day07-dsa-85f5b70d@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261111T180000
+DTEND;TZID=Asia/Kolkata:20261111T193000
+SUMMARY:[Fintech DSA D07] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Weekly timed mock assessment (2 medium + 1 hard problem).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-milestone-07-4de5e8b4@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;VALUE=DATE:20261111
+DTEND;VALUE=DATE:20261112
+SUMMARY:🏆 [MILESTONE 1] Project 1 Delivery: UPI Switch\, Bank Cores\, T+1 Settlement & 3-Way Recon
+DESCRIPTION:End-of-Week 1 Project Delivery:\n- Central UPI Switch + 3 Bank Core Simulators + 2 PSP Simulators + Web Admin Console\n- 100 TPS end-to-end load test (p95 < 1s)\n- All 10 Acceptance Tests passing (including 5x concurrent duplicate debit & mid-flight restart)\n- Sample T+1 settlement CSVs & 3-way reconciliation report committed + 5-min Demo Video recorded.
+BEGIN:VALARM
+TRIGGER:PT9H
+ACTION:DISPLAY
+DESCRIPTION:🏆 [MILESTONE 1] Project 1 Delivery: UPI Switch\, Bank Cores\, T+1 Settlement & 3-Way Recon
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day08-morning-7a546641@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261112T090000
+DTEND;TZID=Asia/Kolkata:20261112T133000
+SUMMARY:[Fintech D08] Merchant Onboarding\, MDR/GST Plans & Overlap Key Rotation (Project 2: Payment Gateway)
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 8 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Razorpay/Cashfree/PayU gateway architecture\, merchant KYC states (CREATED -> UNDER_REVIEW -> ACTIVE | REJECTED)\, test vs live sandboxes\, and zero-downtime HMAC API key rotation.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Gateway API merchant onboarding\, MDR percentage + 18% GST fee plan config\, HMAC authentication middleware\, and API key rotation with a configurable overlap window where both old and new secrets verify.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D08] Merchant Onboarding\, MDR/GST Plans & Overlap Key Rotation (Project 2: Payment Gateway)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day08-afternoon-be176db5@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261112T143000
+DTEND;TZID=Asia/Kolkata:20261112T173000
+SUMMARY:[Fintech Build & Test D08] Merchant Onboarding\, MDR/GST Plans & Overlap Key Rotation — Implementation & Verification
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 8 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Gateway API merchant onboarding\, MDR percentage + 18% GST fee plan config\, HMAC authentication middleware\, and API key rotation with a configurable overlap window where both old and new secrets verify.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day08-dsa-ae1ad031@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261112T180000
+DTEND;TZID=Asia/Kolkata:20261112T193000
+SUMMARY:[Fintech DSA D08] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Sliding window rate limiters (token bucket / leaky bucket per merchant).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day09-morning-475a38aa@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261113T090000
+DTEND;TZID=Asia/Kolkata:20261113T133000
+SUMMARY:[Fintech D09] Orders\, Multi-Attempt Lifecycle\, Auto/Manual Capture & Hosted Checkout (Project 2: Payment Gateway)
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 9 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Order vs Payment Attempt separation (1 Order -> N Attempts\; at most 1 succeeds\; 2nd success auto-refunded)\, auto-capture vs 7-day manual capture/void\, and 30-min order expiry.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: POST /orders (pass 10-concurrent identical call idempotency test)\, manual capture/void endpoints\, 3 Acquirer Simulators (with 3DS OTP page + chaos endpoint)\, and mobile-responsive Hosted Checkout (<2s first paint: Card\, UPI via Project 1 Switch\, Net-banking\, Wallet).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D09] Orders\, Multi-Attempt Lifecycle\, Auto/Manual Capture & Hosted Checkout (Project 2: Payment Gateway)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day09-afternoon-9ea634b4@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261113T143000
+DTEND;TZID=Asia/Kolkata:20261113T173000
+SUMMARY:[Fintech Build & Test D09] Orders\, Multi-Attempt Lifecycle\, Auto/Manual Capture & Hosted Checkout — Implementation & Verification
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 9 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: POST /orders (pass 10-concurrent identical call idempotency test)\, manual capture/void endpoints\, 3 Acquirer Simulators (with 3DS OTP page + chaos endpoint)\, and mobile-responsive Hosted Checkout (<2s first paint: Card\, UPI via Project 1 Switch\, Net-banking\, Wallet).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day09-dsa-7c649596@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261113T180000
+DTEND;TZID=Asia/Kolkata:20261113T193000
+SUMMARY:[Fintech DSA D09] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Concurrency locks\, compare-and-swap patterns & tree traversal.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day10-morning-f4c7a4d3@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261114T090000
+DTEND;TZID=Asia/Kolkata:20261114T133000
+SUMMARY:[Fintech D10] Smart Acquirer Routing\, Rolling Health Scores & Technical Failover (Project 2: Payment Gateway)
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 10 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Juspay-style orchestration: BIN routing (first 6 digits)\, amount bands\, rolling 1-min health score (success rate\, p95 latency\, timeouts)\, and retrying ONCE on technical failure (5xx/timeout) vs NEVER retrying business declines (51 insufficient funds / wrong OTP).\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Routing Engine & per-minute health score calculator\; automatic acquirer demotion/restoration\; within-session failover on technical failure\; operator force/block overrides with audit logs\; attempt-by-attempt routing reason recording.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D10] Smart Acquirer Routing\, Rolling Health Scores & Technical Failover (Project 2: Payment Gateway)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day10-afternoon-d62ab0d3@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261114T143000
+DTEND;TZID=Asia/Kolkata:20261114T173000
+SUMMARY:[Fintech Build & Test D10] Smart Acquirer Routing\, Rolling Health Scores & Technical Failover — Implementation & Verification
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 10 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Routing Engine & per-minute health score calculator\; automatic acquirer demotion/restoration\; within-session failover on technical failure\; operator force/block overrides with audit logs\; attempt-by-attempt routing reason recording.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day10-dsa-0ca28ecf@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261114T180000
+DTEND;TZID=Asia/Kolkata:20261114T193000
+SUMMARY:[Fintech DSA D10] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Weighted random selection\, multi-armed bandit / dynamic scoring heaps.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day11-morning-e54a3df9@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261115T090000
+DTEND;TZID=Asia/Kolkata:20261115T133000
+SUMMARY:[Fintech D11] Isolated PCI Token Vault\, Saved Cards & The 100-Payment Grep Test (Project 2: Payment Gateway)
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 11 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: PCI-DSS scope reduction: why card numbers (PANs) go straight from Checkout to the Token Vault\, AES-GCM encryption at rest with config keys\, and strict detokenize access control.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Separate Token Vault service + dedicated DB (POST /tokens\, internal POST /tokens/{token}/detokenize\, DELETE). Implement saved cards (customer_id + token + CVV/OTP). Run the automated 100-card-payment Grep Test proving 0 raw PANs exist in logs or Gateway DB.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D11] Isolated PCI Token Vault\, Saved Cards & The 100-Payment Grep Test (Project 2: Payment Gateway)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day11-afternoon-e166ecdf@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261115T143000
+DTEND;TZID=Asia/Kolkata:20261115T173000
+SUMMARY:[Fintech Build & Test D11] Isolated PCI Token Vault\, Saved Cards & The 100-Payment Grep Test — Implementation & Verification
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 11 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Separate Token Vault service + dedicated DB (POST /tokens\, internal POST /tokens/{token}/detokenize\, DELETE). Implement saved cards (customer_id + token + CVV/OTP). Run the automated 100-card-payment Grep Test proving 0 raw PANs exist in logs or Gateway DB.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day11-dsa-06f72bdc@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261115T180000
+DTEND;TZID=Asia/Kolkata:20261115T193000
+SUMMARY:[Fintech DSA D11] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Cryptography primitives\, hashing\, and secure token mapping structures.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day12-morning-c0426992@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261116T090000
+DTEND;TZID=Asia/Kolkata:20261116T133000
+SUMMARY:[Fintech D12] At-Least-Once Signed Webhooks\, Refunds & Double-Entry Merchant Ledger (Project 2: Payment Gateway)
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 12 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Reliable webhook delivery (HMAC signature header\, event_id deduplication\, exponential backoff 1m/5m/30m/2h/6h/24h\, 24h FAILING alert) and merchant ledger accounting (Receivable\, Payable\, MDR Revenue\, GST Tax\, Rolling Reserves).\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Separate Webhook Worker (via Kafka/Redis Streams) + manual resend API\; full/partial idempotent Refunds (CREATED -> PROCESSED | FAILED)\; double-entry Merchant Ledger posting gross\, MDR\, GST\, net\, and refund reversals.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D12] At-Least-Once Signed Webhooks\, Refunds & Double-Entry Merchant Ledger (Project 2: Payment Gateway)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day12-afternoon-631d638a@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261116T143000
+DTEND;TZID=Asia/Kolkata:20261116T173000
+SUMMARY:[Fintech Build & Test D12] At-Least-Once Signed Webhooks\, Refunds & Double-Entry Merchant Ledger — Implementation & Verification
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 12 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Separate Webhook Worker (via Kafka/Redis Streams) + manual resend API\; full/partial idempotent Refunds (CREATED -> PROCESSED | FAILED)\; double-entry Merchant Ledger posting gross\, MDR\, GST\, net\, and refund reversals.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day12-dsa-b4e822d5@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261116T180000
+DTEND;TZID=Asia/Kolkata:20261116T193000
+SUMMARY:[Fintech DSA D12] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Directed acyclic graphs (DAGs) & topological sort for ledger dependencies.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day13-morning-c4e19fc1@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261117T090000
+DTEND;TZID=Asia/Kolkata:20261117T133000
+SUMMARY:[Fintech D13] T+1/T+2 Payouts\, Rolling Reserves\, Merchant Dashboard & Demo Store (Project 2: Payment Gateway)
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 13 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Settlement batching (T+1/T+2 from capture)\, N-day rolling reserves & operator holds\, and nightly dashboard-vs-ledger balance reconciliation checks.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Payout batch runner + downloadable CSV settlement reports\; nightly ledger invariant checker\; Merchant Dashboard (overview\, attempt-by-attempt story\, refunds\, webhooks\, keys) + Operator Routing Analytics + Reference Demo Store with webhook signature verification. Add validated LLM failure-reason normalizer.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D13] T+1/T+2 Payouts\, Rolling Reserves\, Merchant Dashboard & Demo Store (Project 2: Payment Gateway)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day13-afternoon-47d725b7@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261117T143000
+DTEND;TZID=Asia/Kolkata:20261117T173000
+SUMMARY:[Fintech Build & Test D13] T+1/T+2 Payouts\, Rolling Reserves\, Merchant Dashboard & Demo Store — Implementation & Verification
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 13 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Payout batch runner + downloadable CSV settlement reports\; nightly ledger invariant checker\; Merchant Dashboard (overview\, attempt-by-attempt story\, refunds\, webhooks\, keys) + Operator Routing Analytics + Reference Demo Store with webhook signature verification. Add validated LLM failure-reason normalizer.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day13-dsa-726e3064@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261117T180000
+DTEND;TZID=Asia/Kolkata:20261117T193000
+SUMMARY:[Fintech DSA D13] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Dynamic programming (knapsack / subset sum & fee rounding invariants).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day14-morning-c89b4234@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261118T090000
+DTEND;TZID=Asia/Kolkata:20261118T133000
+SUMMARY:[Fintech D14] MILESTONE 2: Project 2 E2E Verification\, Integration Guide & Demo (Project 2: Payment Gateway)
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 14 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Review all 10 Project 2 Acceptance Tests and interview defense: 'Why does a gateway need routing?'\, 'How do you keep card data safe?'\, 'How do you design webhooks a merchant can trust?'\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nDeliver: Pass all 10 acceptance tests (Playwright checkout\, acquirer failover\, business decline no-retry\, 10x concurrent order creation\, grep test\, partial refunds\, webhook 500 recovery\, payout report\, key rotation)\, write Merchant Developer Integration Guide\, and record Project 2 demo video.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D14] MILESTONE 2: Project 2 E2E Verification\, Integration Guide & Demo (Project 2: Payment Gateway)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day14-afternoon-e6cdc3cd@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261118T143000
+DTEND;TZID=Asia/Kolkata:20261118T173000
+SUMMARY:[Fintech Build & Test D14] MILESTONE 2: Project 2 E2E Verification\, Integration Guide & Demo — Implementation & Verification
+DESCRIPTION:PROJECT: Project 2: Payment Gateway (Day 14 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nDeliver: Pass all 10 acceptance tests (Playwright checkout\, acquirer failover\, business decline no-retry\, 10x concurrent order creation\, grep test\, partial refunds\, webhook 500 recovery\, payout report\, key rotation)\, write Merchant Developer Integration Guide\, and record Project 2 demo video.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day14-dsa-28ccc74f@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261118T180000
+DTEND;TZID=Asia/Kolkata:20261118T193000
+SUMMARY:[Fintech DSA D14] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Weekly timed mock assessment (graphs\, heaps\, concurrency).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-milestone-14-33ea7831@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;VALUE=DATE:20261118
+DTEND;VALUE=DATE:20261119
+SUMMARY:🏆 [MILESTONE 2] Project 2 Delivery: Payment Gateway\, Smart Routing\, PCI Vault & Webhooks
+DESCRIPTION:End-of-Week 2 Project Delivery:\n- Gateway API + Hosted Checkout + Isolated PCI Token Vault + 3 Acquirer Simulators + Merchant Dashboard + Demo Store\n- 100-Card-Payment Grep Test passing (0 PANs outside vault)\n- 10x concurrent order/refund idempotency + Acquirer technical failover + At-least-once signed webhooks\n- Merchant Developer Integration Guide + 5-min Demo Video recorded.
+BEGIN:VALARM
+TRIGGER:PT9H
+ACTION:DISPLAY
+DESCRIPTION:🏆 [MILESTONE 2] Project 2 Delivery: Payment Gateway\, Smart Routing\, PCI Vault & Webhooks
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day15-morning-427a4168@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261119T090000
+DTEND;TZID=Asia/Kolkata:20261119T133000
+SUMMARY:[Fintech D15] Device Binding\, Asymmetric Key Signing\, PIN Nonces & Account Discovery (Project 3: Consumer App & Risk)
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 15 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: PhonePe/GPay TPAP security model: 1 active device per customer\, device public/private key request signing\, 24-hour new-device cooling cap\, and salted per-txn nonce PIN hashing.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: PSP Service onboarding (POST /signup with mock SMS OTP\, POST /devices/bind with public key\, second-device takeover retiring old device + 24h cap\, POST /pin with 5-strike 30m lock) and Bank Core account discovery/linking (GET /banks\, POST /accounts/discover\, POST /accounts/link).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D15] Device Binding\, Asymmetric Key Signing\, PIN Nonces & Account Discovery (Project 3: Consumer App & Risk)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day15-afternoon-9989886e@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261119T143000
+DTEND;TZID=Asia/Kolkata:20261119T173000
+SUMMARY:[Fintech Build & Test D15] Device Binding\, Asymmetric Key Signing\, PIN Nonces & Account Discovery — Implementation & Verification
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 15 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: PSP Service onboarding (POST /signup with mock SMS OTP\, POST /devices/bind with public key\, second-device takeover retiring old device + 24h cap\, POST /pin with 5-strike 30m lock) and Bank Core account discovery/linking (GET /banks\, POST /accounts/discover\, POST /accounts/link).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day15-dsa-84d441f9@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261119T180000
+DTEND;TZID=Asia/Kolkata:20261119T193000
+SUMMARY:[Fintech DSA D15] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Public-key signature verification flows & monotonic timestamp validation.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day16-morning-ea215957@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261120T090000
+DTEND;TZID=Asia/Kolkata:20261120T133000
+SUMMARY:[Fintech D16] Mobile App 4 Pay Flows\, NPCI QR Parser & Honest Pending UX (Project 3: Consumer App & Risk)
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 16 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Standard UPI QR URI spec (upi://pay?pa=<address>&pn=<name>&am=<amount>&tn=<note>)\, directory display-name verification\, client-generated transaction IDs\, and why Pending must NEVER be shown as success or failure.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Consumer App (Mobile/Emulator) + PSP flows for VPA creation (mobile@psp + custom handles) and all 4 Pay Paths (QR scan/generate\, VPA\, Mobile number lookup\, Bank Account + IFSC). Build the Honest Pending Screen that survives airplane mode & app restart.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D16] Mobile App 4 Pay Flows\, NPCI QR Parser & Honest Pending UX (Project 3: Consumer App & Risk)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day16-afternoon-45c169c0@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261120T143000
+DTEND;TZID=Asia/Kolkata:20261120T173000
+SUMMARY:[Fintech Build & Test D16] Mobile App 4 Pay Flows\, NPCI QR Parser & Honest Pending UX — Implementation & Verification
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 16 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Consumer App (Mobile/Emulator) + PSP flows for VPA creation (mobile@psp + custom handles) and all 4 Pay Paths (QR scan/generate\, VPA\, Mobile number lookup\, Bank Account + IFSC). Build the Honest Pending Screen that survives airplane mode & app restart.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day16-dsa-c04f84d9@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261120T180000
+DTEND;TZID=Asia/Kolkata:20261120T193000
+SUMMARY:[Fintech DSA D16] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: URI/query-string parsers\, state persistence & offline queue synchronization.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day17-morning-358703f0@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261121T090000
+DTEND;TZID=Asia/Kolkata:20261121T133000
+SUMMARY:[Fintech D17] Collect (Pull) Requests\, Fan-Out Abuse Controls & Pre-Switch Limits (Project 3: Consumer App & Risk)
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 17 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Collect request lifecycle (30m default / 48h max expiry) and collect fraud vectors (unsolicited collect spam\, new-account fan-out to many distinct payers).\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Collect endpoints (POST /collects\, approve with PIN\, decline\, auto-expiry)\; abuse controls (payer blocklist\, per-hour/per-payer rate limits\, fan-out risk flagging)\; and pre-switch PSP Limit Profiles (per-txn max\, daily amount/count\, 24h new-device cap\, new-counterparty cap).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D17] Collect (Pull) Requests\, Fan-Out Abuse Controls & Pre-Switch Limits (Project 3: Consumer App & Risk)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day17-afternoon-f140030e@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261121T143000
+DTEND;TZID=Asia/Kolkata:20261121T173000
+SUMMARY:[Fintech Build & Test D17] Collect (Pull) Requests\, Fan-Out Abuse Controls & Pre-Switch Limits — Implementation & Verification
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 17 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Collect endpoints (POST /collects\, approve with PIN\, decline\, auto-expiry)\; abuse controls (payer blocklist\, per-hour/per-payer rate limits\, fan-out risk flagging)\; and pre-switch PSP Limit Profiles (per-txn max\, daily amount/count\, 24h new-device cap\, new-counterparty cap).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day17-dsa-b62c22bc@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261121T180000
+DTEND;TZID=Asia/Kolkata:20261121T193000
+SUMMARY:[Fintech DSA D17] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: HyperLogLog / sliding-window distinct-element counting (collect fan-out).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day18-morning-8397d906@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261122T090000
+DTEND;TZID=Asia/Kolkata:20261122T133000
+SUMMARY:[Fintech D18] Real-Time Risk Engine (<100ms p95)\, Velocity Rules & Step-Up Auth (Project 3: Consumer App & Risk)
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 18 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Data-driven fraud scoring under strict latency budgets (<100ms p95\; deterministic fallback on timeout: allow small\, step-up large). Starter rules: 10m/24h velocity\, 30-day median anomaly\, new counterparty\, new device <24h\, collect fan-out\, blacklist\, round-amount + night-time.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Real-Time Risk Engine (POST /risk/score) evaluating weighted JSON rules in <100ms\; mapping score thresholds to ALLOW\, STEP_UP (extra mobile OTP or 30-min cooling delay with cancel button)\, or DECLINE\; full decision logging (fired rules\, weights\, inputs).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D18] Real-Time Risk Engine (<100ms p95)\, Velocity Rules & Step-Up Auth (Project 3: Consumer App & Risk)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day18-afternoon-8cb64a81@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261122T143000
+DTEND;TZID=Asia/Kolkata:20261122T173000
+SUMMARY:[Fintech Build & Test D18] Real-Time Risk Engine (<100ms p95)\, Velocity Rules & Step-Up Auth — Implementation & Verification
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 18 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Real-Time Risk Engine (POST /risk/score) evaluating weighted JSON rules in <100ms\; mapping score thresholds to ALLOW\, STEP_UP (extra mobile OTP or 30-min cooling delay with cancel button)\, or DECLINE\; full decision logging (fired rules\, weights\, inputs).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day18-dsa-85add999@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261122T180000
+DTEND;TZID=Asia/Kolkata:20261122T193000
+SUMMARY:[Fintech DSA D18] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Running median (two-heaps) for 30-day customer amount anomaly detection.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day19-morning-09eba611@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261123T090000
+DTEND;TZID=Asia/Kolkata:20261123T133000
+SUMMARY:[Fintech D19] Rule Versioning\, Decision Replay\, Shadow Mode & LLM Rule Compiler (Project 3: Consumer App & Risk)
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 19 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: How risk teams test stricter rules safely in production using Shadow Mode (scoring live traffic against candidate ruleset without acting) and historical decision replay.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Ruleset versioning (active\, shadow\, retired)\, POST /risk/replay\, Shadow Mode dual evaluator & diff report (100 demo payments comparison)\, and an LLM Natural-Language-to-Risk-Rule JSON Compiler with strict schema validation and mandatory shadow-mode staging.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D19] Rule Versioning\, Decision Replay\, Shadow Mode & LLM Rule Compiler (Project 3: Consumer App & Risk)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day19-afternoon-ebc4224c@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261123T143000
+DTEND;TZID=Asia/Kolkata:20261123T173000
+SUMMARY:[Fintech Build & Test D19] Rule Versioning\, Decision Replay\, Shadow Mode & LLM Rule Compiler — Implementation & Verification
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 19 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Ruleset versioning (active\, shadow\, retired)\, POST /risk/replay\, Shadow Mode dual evaluator & diff report (100 demo payments comparison)\, and an LLM Natural-Language-to-Risk-Rule JSON Compiler with strict schema validation and mandatory shadow-mode staging.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day19-dsa-2cd0fcf5@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261123T180000
+DTEND;TZID=Asia/Kolkata:20261123T193000
+SUMMARY:[Fintech DSA D19] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Expression tree evaluation (AST parsing for data-driven rule conditions).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day20-morning-5c2e72df@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261124T090000
+DTEND;TZID=Asia/Kolkata:20261124T133000
+SUMMARY:[Fintech D20] Dispute Desk Linked to Switch Reconciliation & Web Ops Console (Project 3: Consumer App & Risk)
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 20 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Customer dispute lifecycle (OPEN -> UNDER_REVIEW -> RESOLVED_CREDITED | RESOLVED_REJECTED | ESCALATED)\, SLA deadlines\, and automatic resolution when a Project 1 Switch reversal lands.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Dispute Desk linked to Project 1 Switch records & reconciliation exceptions\; auto-resolution webhook/stream listener on switch reversal\; downloadable Escalated Case File generator\; In-App Inbox & Push/SMS mock\; Web Ops Console (customer lookup\, device reset\, PIN unlock\, rules editor\, blacklist).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D20] Dispute Desk Linked to Switch Reconciliation & Web Ops Console (Project 3: Consumer App & Risk)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day20-afternoon-cf952868@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261124T143000
+DTEND;TZID=Asia/Kolkata:20261124T173000
+SUMMARY:[Fintech Build & Test D20] Dispute Desk Linked to Switch Reconciliation & Web Ops Console — Implementation & Verification
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 20 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Dispute Desk linked to Project 1 Switch records & reconciliation exceptions\; auto-resolution webhook/stream listener on switch reversal\; downloadable Escalated Case File generator\; In-App Inbox & Push/SMS mock\; Web Ops Console (customer lookup\, device reset\, PIN unlock\, rules editor\, blacklist).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day20-dsa-28912e2a@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261124T180000
+DTEND;TZID=Asia/Kolkata:20261124T193000
+SUMMARY:[Fintech DSA D20] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Event-driven state correlation & interval SLA deadline tracking.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day21-morning-dd66f38f@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261125T090000
+DTEND;TZID=Asia/Kolkata:20261125T133000
+SUMMARY:[Fintech D21] MILESTONE 3: Project 3 Load Test (50 TPS <100ms)\, Walkthrough & Demo (Project 3: Consumer App & Risk)
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 21 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Review all 10 Project 3 Acceptance Tests\, mobile accessibility requirements (tap targets\, screen reader amounts\, high contrast)\, and interview defense: 'How do you stop fraud without blocking good customers?'\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nDeliver: Benchmark Risk Engine at 50 payments/sec (p95 < 100ms)\, execute all 10 acceptance tests (fresh install\, QR pay\, airplane mode restart\, velocity step-up\, blacklist decline\, 2nd device cap\, 20 collect fan-out\, auto-resolved dispute\, 100-payment shadow report\, 5-PIN lock/unlock)\, and record Project 3 demo video.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D21] MILESTONE 3: Project 3 Load Test (50 TPS <100ms)\, Walkthrough & Demo (Project 3: Consumer App & Risk)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day21-afternoon-9bb6bcbb@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261125T143000
+DTEND;TZID=Asia/Kolkata:20261125T173000
+SUMMARY:[Fintech Build & Test D21] MILESTONE 3: Project 3 Load Test (50 TPS <100ms)\, Walkthrough & Demo — Implementation & Verification
+DESCRIPTION:PROJECT: Project 3: Consumer App & Risk (Day 21 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nDeliver: Benchmark Risk Engine at 50 payments/sec (p95 < 100ms)\, execute all 10 acceptance tests (fresh install\, QR pay\, airplane mode restart\, velocity step-up\, blacklist decline\, 2nd device cap\, 20 collect fan-out\, auto-resolved dispute\, 100-payment shadow report\, 5-PIN lock/unlock)\, and record Project 3 demo video.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day21-dsa-f9f816b6@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261125T180000
+DTEND;TZID=Asia/Kolkata:20261125T193000
+SUMMARY:[Fintech DSA D21] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Weekly timed mock assessment (heaps\, sliding windows\, expression trees).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-milestone-21-89087099@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;VALUE=DATE:20261125
+DTEND;VALUE=DATE:20261126
+SUMMARY:🏆 [MILESTONE 3] Project 3 Delivery: Consumer UPI App\, Device Binding & <100ms Risk Engine
+DESCRIPTION:End-of-Week 3 Project Delivery:\n- Mobile Consumer App + PSP Service + Real-Time Risk Engine (<100ms p95 at 50 TPS) + Dispute Desk + Web Ops Console\n- Device keypair binding\, 24h cooling cap\, 4 Pay paths\, Honest Pending UX surviving airplane mode & restart\n- 7 weighted starter rules + Shadow Mode 100-payment diff report + Auto-resolved dispute on Switch reversal + Demo Video.
+BEGIN:VALARM
+TRIGGER:PT9H
+ACTION:DISPLAY
+DESCRIPTION:🏆 [MILESTONE 3] Project 3 Delivery: Consumer UPI App\, Device Binding & <100ms Risk Engine
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day22-morning-5ab7f5b2@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261126T090000
+DTEND;TZID=Asia/Kolkata:20261126T133000
+SUMMARY:[Fintech D22] RBI Mandate Regulations: AutoPay vs e-NACH\, UMRN & Cap Re-Authorization (Project 4: Mandates & Subscriptions)
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 22 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Recurring payment regulations: UMRN (Unique Mandate Reference Number)\, max amount caps\, monthly aggregate caps\, customer re-authorization on cap increase\, synchronous Switch AutoPay vs asynchronous Bank e-NACH batch files.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Mandates Service (POST /mandates\, authorize\, modify\, pause\, revoke). Implement AutoPay approval inside Project 3 App (with PIN) + Project 1 Switch registration\, and e-NACH OTP registration against Bank Core. Propagate customer pause/revoke immediately to Switch/Bank and halt linked subscriptions.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D22] RBI Mandate Regulations: AutoPay vs e-NACH\, UMRN & Cap Re-Authorization (Project 4: Mandates & Subscriptions)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day22-afternoon-f30597e9@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261126T143000
+DTEND;TZID=Asia/Kolkata:20261126T173000
+SUMMARY:[Fintech Build & Test D22] RBI Mandate Regulations: AutoPay vs e-NACH\, UMRN & Cap Re-Authorization — Implementation & Verification
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 22 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Mandates Service (POST /mandates\, authorize\, modify\, pause\, revoke). Implement AutoPay approval inside Project 3 App (with PIN) + Project 1 Switch registration\, and e-NACH OTP registration against Bank Core. Propagate customer pause/revoke immediately to Switch/Bank and halt linked subscriptions.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day22-dsa-2cd8637e@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261126T180000
+DTEND;TZID=Asia/Kolkata:20261126T193000
+SUMMARY:[Fintech DSA D22] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Interval scheduling & resource capacity checking (aggregate mandate caps).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day23-morning-c93b5c8e@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261127T090000
+DTEND;TZID=Asia/Kolkata:20261127T133000
+SUMMARY:[Fintech D23] Subscriptions State Machine\, Mid-Cycle Proration & Calendar Edge Cases (Project 4: Mandates & Subscriptions)
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 23 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Subscription states (CREATED -> AUTHENTICATED -> ACTIVE -> PAST_DUE | PAUSED | HALTED | CANCELLED | COMPLETED)\, mid-cycle plan upgrade/downgrade proration math in integer paise\, and calendar edge cases (29th/30th/31st anchor snapping to Feb 28/29 and returning to 31st in March\; customer timezone vs UTC).\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Plans & Subscriptions Service\, mid-cycle proration credit/charge line-item calculator\, timezone-aware anchor date engine\, and the Injectable Fake Clock so 1 month of billing runs in minutes.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D23] Subscriptions State Machine\, Mid-Cycle Proration & Calendar Edge Cases (Project 4: Mandates & Subscriptions)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day23-afternoon-d88f90ed@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261127T143000
+DTEND;TZID=Asia/Kolkata:20261127T173000
+SUMMARY:[Fintech Build & Test D23] Subscriptions State Machine\, Mid-Cycle Proration & Calendar Edge Cases — Implementation & Verification
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 23 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Plans & Subscriptions Service\, mid-cycle proration credit/charge line-item calculator\, timezone-aware anchor date engine\, and the Injectable Fake Clock so 1 month of billing runs in minutes.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day23-dsa-2c3c2a94@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261127T180000
+DTEND;TZID=Asia/Kolkata:20261127T193000
+SUMMARY:[Fintech DSA D23] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Calendar arithmetic\, timezone normalization & exact integer rational math.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day24-morning-c5bf5154@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261128T090000
+DTEND;TZID=Asia/Kolkata:20261128T133000
+SUMMARY:[Fintech D24] 24h Pre-Debit Notice Gate & Kill-Safe Exactly-Once Cycle Executor (Project 4: Mandates & Subscriptions)
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 24 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Regulatory pre-debit notification rule (debit cannot execute unless 24h notice was sent and recorded)\, execution windows (06:00-22:00)\, and claiming cycles via execution_key = subscription_id + cycle_number.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Minute Scheduler & Executor with mandatory Pre-Debit Notice gate (carrying 1-click pause/cancel link)\, execution_key atomic lock\, AutoPay execution via Project 1 Switch\, and the Executor Kill Test (kill process between claim and switch response -> restart resolves via switch status check with 1 bank debit).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D24] 24h Pre-Debit Notice Gate & Kill-Safe Exactly-Once Cycle Executor (Project 4: Mandates & Subscriptions)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day24-afternoon-ea929b72@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261128T143000
+DTEND;TZID=Asia/Kolkata:20261128T173000
+SUMMARY:[Fintech Build & Test D24] 24h Pre-Debit Notice Gate & Kill-Safe Exactly-Once Cycle Executor — Implementation & Verification
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 24 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Minute Scheduler & Executor with mandatory Pre-Debit Notice gate (carrying 1-click pause/cancel link)\, execution_key atomic lock\, AutoPay execution via Project 1 Switch\, and the Executor Kill Test (kill process between claim and switch response -> restart resolves via switch status check with 1 bank debit).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day24-dsa-faf68360@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261128T180000
+DTEND;TZID=Asia/Kolkata:20261128T193000
+SUMMARY:[Fintech DSA D24] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Distributed locking\, lease expiry & idempotent job scheduler design.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day25-morning-003bc609@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261129T090000
+DTEND;TZID=Asia/Kolkata:20261129T133000
+SUMMARY:[Fintech D25] e-NACH Batch Presentment\, Bank Batch Simulator & Missing-Record Exceptions (Project 4: Mandates & Subscriptions)
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 25 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: e-NACH daily presentment file generation per bank\, T+1/T+2 response file ingestion (SUCCESS\, insufficient funds\, mandate not found\, account closed)\, and why a record missing from a response file after deadline must raise an exception\, never be assumed.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: e-NACH Presentment Batch generator\, Bank Batch Simulator (POST /nach/present\, GET /nach/response/{batch})\, response file parser\, missing-record exception detector ( tested with 500 subscriptions across 3 banks)\, and posting of captured subscription payments into Project 2's Merchant Ledger.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D25] e-NACH Batch Presentment\, Bank Batch Simulator & Missing-Record Exceptions (Project 4: Mandates & Subscriptions)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day25-afternoon-b6788848@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261129T143000
+DTEND;TZID=Asia/Kolkata:20261129T173000
+SUMMARY:[Fintech Build & Test D25] e-NACH Batch Presentment\, Bank Batch Simulator & Missing-Record Exceptions — Implementation & Verification
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 25 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: e-NACH Presentment Batch generator\, Bank Batch Simulator (POST /nach/present\, GET /nach/response/{batch})\, response file parser\, missing-record exception detector ( tested with 500 subscriptions across 3 banks)\, and posting of captured subscription payments into Project 2's Merchant Ledger.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day25-dsa-5998b442@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261129T180000
+DTEND;TZID=Asia/Kolkata:20261129T193000
+SUMMARY:[Fintech DSA D25] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Batch file streaming parsers\, checksum validation & set difference.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day26-morning-138c4b1f@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261130T090000
+DTEND;TZID=Asia/Kolkata:20261130T133000
+SUMMARY:[Fintech D26] Dunning Engine\, Soft vs Hard Failures\, Grace Periods & Pay-Now Recovery (Project 4: Mandates & Subscriptions)
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 26 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Soft failure (insufficient funds/timeout -> retry schedule Day 1\, 3\, 7\, each a fresh mandate execution with its own reference) vs Hard failure (mandate revoked/account closed -> halt immediately)\, PAST_DUE grace period\, and out-of-band recovery.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Dunning Engine with configurable retry offsets\, templated customer dunning messages containing a Pay-Now Link (charges one-time via Project 2 Hosted Checkout -> clears cycle & restores ACTIVE)\, grace period expiry -> HALTED\, and recovery window reactivation.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D26] Dunning Engine\, Soft vs Hard Failures\, Grace Periods & Pay-Now Recovery (Project 4: Mandates & Subscriptions)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day26-afternoon-94b84c79@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261130T143000
+DTEND;TZID=Asia/Kolkata:20261130T173000
+SUMMARY:[Fintech Build & Test D26] Dunning Engine\, Soft vs Hard Failures\, Grace Periods & Pay-Now Recovery — Implementation & Verification
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 26 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Dunning Engine with configurable retry offsets\, templated customer dunning messages containing a Pay-Now Link (charges one-time via Project 2 Hosted Checkout -> clears cycle & restores ACTIVE)\, grace period expiry -> HALTED\, and recovery window reactivation.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day26-dsa-5802ddc7@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261130T180000
+DTEND;TZID=Asia/Kolkata:20261130T193000
+SUMMARY:[Fintech DSA D26] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Finite state machines with timed transitions & retry backoff graphs.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day27-morning-ed0c8360@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261201T090000
+DTEND;TZID=Asia/Kolkata:20261201T133000
+SUMMARY:[Fintech D27] Printable Invoices\, MRR/Churn Analytics & Customer/Merchant Portals (Project 4: Mandates & Subscriptions)
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 27 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Invoice lifecycle (DRAFT -> ISSUED -> PAID | VOID | UNCOLLECTIBLE)\, SaaS revenue metrics (MRR\, New\, Expansion\, Contraction\, Churn\, Dunning Recovery Rate)\, and invariant: MRR + one-time charges = sum of paid invoices.\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nBuild: Printable Invoice & Mandate Receipt generator\; Customer Portal (in Project 3 App + Web)\; Merchant Subscription Dashboard (extending Project 2 with MRR movement\, recovery stats\, CSV exports\, and subscription.*/mandate.*/invoice.* webhooks via Project 2).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D27] Printable Invoices\, MRR/Churn Analytics & Customer/Merchant Portals (Project 4: Mandates & Subscriptions)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day27-afternoon-94845c87@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261201T143000
+DTEND;TZID=Asia/Kolkata:20261201T173000
+SUMMARY:[Fintech Build & Test D27] Printable Invoices\, MRR/Churn Analytics & Customer/Merchant Portals — Implementation & Verification
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 27 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nBuild: Printable Invoice & Mandate Receipt generator\; Customer Portal (in Project 3 App + Web)\; Merchant Subscription Dashboard (extending Project 2 with MRR movement\, recovery stats\, CSV exports\, and subscription.*/mandate.*/invoice.* webhooks via Project 2).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day27-dsa-1bd3a448@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261201T180000
+DTEND;TZID=Asia/Kolkata:20261201T193000
+SUMMARY:[Fintech DSA D27] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Time-series aggregation\, cohort churn calculation & prefix sums.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day28-morning-9c8cc51e@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261202T090000
+DTEND;TZID=Asia/Kolkata:20261202T133000
+SUMMARY:[Fintech D28] MILESTONE 4: 10\,000-Cycle Load Test\, Month-in-Minutes Run & Demo (Project 4: Mandates & Subscriptions)
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 28 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Review all 10 Project 4 Acceptance Tests and interview defense: 'How do subscriptions handle a failed debit?' and 'How does your scheduler process 10\,000 due cycles in one minute without double-debiting?'\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nDeliver: Benchmark 10\,000 cycles due in the same minute on a laptop (0 duplicate execution keys)\, execute all 10 acceptance tests using the Fake Clock (Feb 28 -> Mar 31 anchor\, pre-debit cancel\, kill test\, Day 1/3/7 dunning + pay-now recovery\, 500 e-NACH batch\, mid-cycle upgrade\, cap re-auth\, MRR reconciliation)\, and record Project 4 demo video.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D28] MILESTONE 4: 10\,000-Cycle Load Test\, Month-in-Minutes Run & Demo (Project 4: Mandates & Subscriptions)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day28-afternoon-c04359af@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261202T143000
+DTEND;TZID=Asia/Kolkata:20261202T173000
+SUMMARY:[Fintech Build & Test D28] MILESTONE 4: 10\,000-Cycle Load Test\, Month-in-Minutes Run & Demo — Implementation & Verification
+DESCRIPTION:PROJECT: Project 4: Mandates & Subscriptions (Day 28 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nDeliver: Benchmark 10\,000 cycles due in the same minute on a laptop (0 duplicate execution keys)\, execute all 10 acceptance tests using the Fake Clock (Feb 28 -> Mar 31 anchor\, pre-debit cancel\, kill test\, Day 1/3/7 dunning + pay-now recovery\, 500 e-NACH batch\, mid-cycle upgrade\, cap re-auth\, MRR reconciliation)\, and record Project 4 demo video.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day28-dsa-e4e50ff7@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261202T180000
+DTEND;TZID=Asia/Kolkata:20261202T193000
+SUMMARY:[Fintech DSA D28] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Weekly timed mock assessment (concurrency\, scheduling\, dynamic programming).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-milestone-28-e92efc90@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;VALUE=DATE:20261202
+DTEND;VALUE=DATE:20261203
+SUMMARY:🏆 [MILESTONE 4] Project 4 Delivery: Recurring Mandates (AutoPay & e-NACH)\, Subscriptions & Dunning
+DESCRIPTION:End-of-Week 4 Project Delivery:\n- Mandates Service + Subscriptions Service + Kill-Safe Executor + Dunning Engine + e-NACH Batch Simulator + Portals\n- 10\,000 cycles due in same minute benchmark (0 duplicate debits) + Injectable Fake Clock month-in-minutes demo\n- Feb 28/Mar 31 anchor handling\, 24h pre-debit notice gate\, Day 1/3/7 dunning + Pay-Now recovery\, MRR-to-Invoice reconciliation + Demo Video.
+BEGIN:VALARM
+TRIGGER:PT9H
+ACTION:DISPLAY
+DESCRIPTION:🏆 [MILESTONE 4] Project 4 Delivery: Recurring Mandates (AutoPay & e-NACH)\, Subscriptions & Dunning
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day29-morning-302238a4@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261203T090000
+DTEND;TZID=Asia/Kolkata:20261203T133000
+SUMMARY:[Fintech D29] Unified 4-Project Stack Spin-Up\, Chaos Audit & Cross-Track Verification (Full-Stack Integration & Audit)
+DESCRIPTION:PROJECT: Full-Stack Integration & Audit (Day 29 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Verify all 19 Common Rules and at least 5 of the 8 Cross-Track Skills per project (REST/GraphQL idempotency\, Docker/GitHub Actions CI/CD\, Kafka/Redis Event Streaming\, OAuth2/JWT + Audit Logs\, Playwright + API Test Suites\, Prometheus/Grafana Observability\, Validated LLM features).\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nDeliver: Single top-level repository & 1-command local startup script bringing up all 4 projects + simulators + seeded demo data. Verify all chaos endpoints and README load-test tables.
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D29] Unified 4-Project Stack Spin-Up\, Chaos Audit & Cross-Track Verification (Full-Stack Integration & Audit)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day29-afternoon-180a860f@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261203T143000
+DTEND;TZID=Asia/Kolkata:20261203T173000
+SUMMARY:[Fintech Build & Test D29] Unified 4-Project Stack Spin-Up\, Chaos Audit & Cross-Track Verification — Implementation & Verification
+DESCRIPTION:PROJECT: Full-Stack Integration & Audit (Day 29 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nDeliver: Single top-level repository & 1-command local startup script bringing up all 4 projects + simulators + seeded demo data. Verify all chaos endpoints and README load-test tables.\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day29-dsa-9304e7e0@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261203T180000
+DTEND;TZID=Asia/Kolkata:20261203T193000
+SUMMARY:[Fintech DSA D29] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: Full-length Razorpay / Juspay / PhonePe coding round simulation (90 mins).\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day30-morning-748bdc2f@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261204T090000
+DTEND;TZID=Asia/Kolkata:20261204T133000
+SUMMARY:[Fintech D30] FINAL MILESTONE: Complete 4-Project Fintech Stack & Interview Defense (Final Portfolio & Interview Defense)
+DESCRIPTION:PROJECT: Final Portfolio & Interview Defense (Day 30 of 30)\n\n1. DEEP THEORY & INDUSTRY STUDY (09:00 - 10:30):\nStudy: Rehearse all 9 Interview Talking Points (Page 33-34): Exactly-once debit\, Bank timeouts & deemed-approved\, 3-way reconciliation\, Gateway routing\, Vault PCI boundary & grep test\, Trusted webhooks\, Weighted risk rules & shadow mode\, Subscription dunning\, and 'What was the hardest bug from the kill tests?'\n\n2. CORE BACKEND & INFRA BUILD (10:30 - 13:30):\nDeliver: Finalize 'Three Hardest Decisions & What We Rejected' design docs for all 4 projects\, polish the top-level portfolio page linking all 4 repos and demo videos\, and finalize resume bullets for Product-Tier Fintech roles (Razorpay\, Juspay\, PhonePe\, NPCI).
+BEGIN:VALARM
+TRIGGER:-PT15M
+ACTION:DISPLAY
+DESCRIPTION:Starting in 15m: [Fintech D30] FINAL MILESTONE: Complete 4-Project Fintech Stack & Interview Defense (Final Portfolio & Interview Defense)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day30-afternoon-1c37836f@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261204T143000
+DTEND;TZID=Asia/Kolkata:20261204T173000
+SUMMARY:[Fintech Build & Test D30] FINAL MILESTONE: Complete 4-Project Fintech Stack & Interview Defense — Implementation & Verification
+DESCRIPTION:PROJECT: Final Portfolio & Interview Defense (Day 30 of 30)\n\nDELIVERABLE FOCUS (14:30 - 17:30):\nDeliver: Finalize 'Three Hardest Decisions & What We Rejected' design docs for all 4 projects\, polish the top-level portfolio page linking all 4 repos and demo videos\, and finalize resume bullets for Product-Tier Fintech roles (Razorpay\, Juspay\, PhonePe\, NPCI).\n\nVERIFY:\n- State machine transitions & idempotency keys (Rules 5-7)\n- Double-entry ledger balance invariant (Rules 1-4)\n- Audit log & Prometheus metrics (Rules 8\, 12)
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-day30-dsa-23c6079b@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;TZID=Asia/Kolkata:20261204T180000
+DTEND;TZID=Asia/Kolkata:20261204T193000
+SUMMARY:[Fintech DSA D30] Product-Tier Coding Prep (Juspay / Razorpay / PhonePe)
+DESCRIPTION:FOCUS: DSA: System Design + DSA mock interview defense across all 4 projects.\n\nWhy: Product-tier fintech entry roles (₹20-29L at Razorpay\, Juspay\, PhonePe) pair deep systems interviews with DSA-heavy coding loops.
+END:VEVENT
+BEGIN:VEVENT
+UID:fintech-milestone-30-a0e6deeb@antigravity.local
+DTSTAMP:20261105T062814Z
+DTSTART;VALUE=DATE:20261204
+DTEND;VALUE=DATE:20261205
+SUMMARY:🎓 [FINAL MILESTONE] Complete 4-Project Payments & Fintech Infrastructure Stack Ready
+DESCRIPTION:30-Day Mastery Complete:\n- All 4 interconnected projects running on 1-command spin-up\n- All 19 Common Payment Rules & 8 Cross-Track Engineering Skills verified\n- Design docs\, load test benchmarks\, demo videos\, and Juspay/Razorpay/PhonePe/NPCI interview defense ready.
+BEGIN:VALARM
+TRIGGER:PT9H
+ACTION:DISPLAY
+DESCRIPTION:🎓 [FINAL MILESTONE] Complete 4-Project Payments & Fintech Infrastructure Stack Ready
+END:VALARM
+END:VEVENT
+END:VCALENDAR

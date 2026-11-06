@@ -1,0 +1,16 @@
+{
+  "name": "fintech-infrastructure-stack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Payments & Fintech Infrastructure — 4-Project Stack (Switch, Gateway, Consumer App + Risk, Mandates & Subscriptions)",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "projects/*"
+  ],
+  "scripts": {
+    "test": "node --test packages/core/test/*.test.ts projects/project1-switch/test/*.test.ts",
+    "test:core": "node --test packages/core/test/*.test.ts",
+    "test:p1": "node --test projects/project1-switch/test/*.test.ts"
+  }
+}
