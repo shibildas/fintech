@@ -1,0 +1,43 @@
+{
+  "benchmark": {
+    "total_transactions": 120,
+    "sustained_tps": 1124,
+    "p95_latency_ms": 2
+  },
+  "summary": {
+    "cycle_id": "CYC-2026-11-11",
+    "total_records": 120,
+    "matched_count": 120,
+    "exception_count": 0,
+    "open_exception_count": 0,
+    "match_rate_percent": 100,
+    "by_class": {
+      "MATCHED": {
+        "count": 120,
+        "amount_paise": 60000
+      },
+      "MISSING_AT_REMITTER": {
+        "count": 0,
+        "amount_paise": 0
+      },
+      "MISSING_AT_BENEFICIARY": {
+        "count": 0,
+        "amount_paise": 0
+      },
+      "MISSING_AT_SWITCH": {
+        "count": 0,
+        "amount_paise": 0
+      },
+      "AMOUNT_MISMATCH": {
+        "count": 0,
+        "amount_paise": 0
+      },
+      "STATUS_MISMATCH": {
+        "count": 0,
+        "amount_paise": 0
+      }
+    },
+    "oldest_open_exception_at": null,
+    "created_at": "2026-11-12T11:18:55.273Z"
+  }
+}

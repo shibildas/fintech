@@ -1,0 +1,4 @@
+HDR,CYC-2026-11-11,v1,BANK_SUMMARY_BANKC,2026-11-12T11:18:55.271Z
+bank_id,credits_count,credits_paise,debits_count,debits_paise,net_paise,position_type
+BANKC,80,40000,0,0,40000,RECEIVABLE
+TRL,1,57d414e8f230e5357897153ee4265b5ce43eea5f1b700f7fcb3a6987cdc0d1d3
