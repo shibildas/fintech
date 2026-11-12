@@ -1,0 +1,9 @@
+{
+  "name": "@fintech/project2-gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "node --test test/*.test.ts"
+  }
+}

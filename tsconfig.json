@@ -21,7 +21,8 @@
     "baseUrl": ".",
     "paths": {
       "@fintech/core": ["./packages/core/src/index.ts"],
-      "@fintech/project1-switch": ["./projects/project1-switch/src/index.ts"]
+      "@fintech/project1-switch": ["./projects/project1-switch/src/index.ts"],
+      "@fintech/project2-gateway": ["./projects/project2-gateway/src/index.ts"]
     }
   },
   "include": [
