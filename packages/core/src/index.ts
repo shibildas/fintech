@@ -11,6 +11,8 @@ export * from "./dsa-payment-graph.ts";
 export * from "./dsa-settlement-netting.ts";
 export * from "./dsa-reconciliation-join.ts";
 export * from "./dsa-rate-limiter.ts";
+export * from "./dsa-concurrency-cas.ts";
+export * from "./dsa-tree-traversal.ts";
 
 
 
