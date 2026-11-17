@@ -13,6 +13,7 @@ export * from "./dsa-reconciliation-join.ts";
 export * from "./dsa-rate-limiter.ts";
 export * from "./dsa-concurrency-cas.ts";
 export * from "./dsa-tree-traversal.ts";
+export * from "./dsa-fee-rounding-dp.ts";
 
 
 
