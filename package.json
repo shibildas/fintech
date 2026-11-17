@@ -13,5 +13,8 @@
     "test:core": "node --test packages/core/test/*.test.ts",
     "test:p1": "node --test projects/project1-switch/test/*.test.ts",
     "test:p2": "node --test projects/project2-gateway/test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6"
   }
 }

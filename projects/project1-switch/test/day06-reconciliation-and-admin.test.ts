@@ -2,6 +2,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
+import { performance } from "node:perf_hooks";
+import { fileURLToPath } from "node:url";
 import {
   threeWaySortedMergeJoin,
   type SortedReconInputRow,
@@ -120,7 +123,7 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
       topology.banks.BANKC.ledger.getBalance("765432103344").available_balance_paise;
     assert.equal(shopBalanceAfter - shopBalanceBefore, 10_000);
 
-    const postingsForRrn0 = topology.banks.BANKC.ledger.listPostingsByRrn(rrns[0]);
+    const postingsForRrn0 = topology.banks.BANKC.ledger.listPostingsByRrn(rrns[0]!);
     const exceptionPostings = postingsForRrn0.filter(
       (p) => p.exception_id === missingAtBeneExc.id
     );
@@ -197,6 +200,7 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
     assert.equal(metricsRes.statusCode, 200);
     const metrics = metricsRes.body as ReturnType<typeof app.getMetricsSnapshot>;
     const payRouteMetrics = metrics.routes["POST /pay"];
+    assert.ok(payRouteMetrics, "Expected POST /pay route metrics to be recorded");
 
     assert.ok(
       sustainedTps >= 100,
@@ -222,37 +226,43 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
     });
     assert.equal(reconRes.statusCode, 200);
 
-    const samplesDir = path.resolve(
-      "/Users/shibildas/development/fintech/projects/project1-switch/samples"
-    );
-    fs.mkdirSync(samplesDir, { recursive: true });
+    const samplesDir = fileURLToPath(new URL("../samples", import.meta.url));
+    const shouldWriteSamples =
+      process.env.UPDATE_SAMPLES === "true" ||
+      !fs.existsSync(path.join(samplesDir, `manifest_${cycleId}_v1.csv`));
 
     const settlementData = settleRes.body as ReturnType<
       typeof app.settlement.runSettlementCycle
     >;
-    for (const f of settlementData.files) {
-      fs.writeFileSync(path.join(samplesDir, f.filename), f.csv_content, "utf8");
-    }
+    assert.ok(settlementData.files.length >= 4);
 
     const reconData = reconRes.body as ReturnType<
       typeof app.reconciliation.runThreeWayReconciliation
     >;
-    fs.writeFileSync(
-      path.join(samplesDir, `reconciliation_report_${cycleId}.json`),
-      JSON.stringify(
-        {
-          benchmark: {
-            total_transactions: totalLoadTxns,
-            sustained_tps: sustainedTps,
-            p95_latency_ms: payRouteMetrics.p95_latency_ms,
+    assert.equal(reconData.summary.cycle_id, cycleId);
+
+    if (shouldWriteSamples) {
+      fs.mkdirSync(samplesDir, { recursive: true });
+      for (const f of settlementData.files) {
+        fs.writeFileSync(path.join(samplesDir, f.filename), f.csv_content, "utf8");
+      }
+      fs.writeFileSync(
+        path.join(samplesDir, `reconciliation_report_${cycleId}.json`),
+        JSON.stringify(
+          {
+            benchmark: {
+              total_transactions: totalLoadTxns,
+              sustained_tps: sustainedTps,
+              p95_latency_ms: payRouteMetrics.p95_latency_ms,
+            },
+            summary: reconData.summary,
           },
-          summary: reconData.summary,
-        },
-        null,
-        2
-      ),
-      "utf8"
-    );
+          null,
+          2
+        ),
+        "utf8"
+      );
+    }
   });
 
   it("Day 6 Fintech DSA: threeWaySortedMergeJoin performs O(N) 3-pointer streaming Full Outer Join", () => {
@@ -275,13 +285,13 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
       beneficiarySorted
     );
     assert.equal(joined.length, 3);
-    assert.equal(joined[0].rrn, "631200000001");
-    assert.ok(joined[0].switchRow && joined[0].remitterRow && joined[0].beneficiaryRow);
+    assert.equal(joined[0]!.rrn, "631200000001");
+    assert.ok(joined[0]!.switchRow && joined[0]!.remitterRow && joined[0]!.beneficiaryRow);
 
-    assert.equal(joined[1].rrn, "631200000002");
-    assert.equal(joined[1].beneficiaryRow, null);
+    assert.equal(joined[1]!.rrn, "631200000002");
+    assert.equal(joined[1]!.beneficiaryRow, null);
 
-    assert.equal(joined[2].rrn, "631200000003");
-    assert.equal(joined[2].switchRow, null);
+    assert.equal(joined[2]!.rrn, "631200000003");
+    assert.equal(joined[2]!.switchRow, null);
   });
 });
