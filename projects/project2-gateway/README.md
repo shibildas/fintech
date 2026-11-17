@@ -92,8 +92,19 @@ export function verifyGatewayWebhook(
 
 ---
 
-## 4. Running the Project 2 Acceptance Suite
+## 4. Running the Project 2 Acceptance & Benchmark Suite
 
 ```bash
 npm run test:p2
 ```
+
+---
+
+## 5. Milestone 2 Interview Defense Talking Points
+
+1. **Why does a gateway need dynamic routing instead of a single acquirer?**
+   - Success rates fluctuate by issuer BIN, card network, ticket size, and time of day. `AcquirerRoutingEngine` scores each `(acquirer, method)` pair on a rolling 60s window (`successRate`, `p95 latency`, `timeouts`), demotes degraded pipes below threshold `60`, and fails over once within the session on technical errors (`91`/`68`/`96`) while **never** retrying business declines (`51`/`55`/`05`).
+2. **How does the Token Vault enforce PCI-DSS isolation?**
+   - Raw PANs go directly to `TokenVaultService` (`vaultDb` separate from `gatewayDb`), encrypted at rest with AES-256-GCM + random 12-byte IVs and config-only keys. CVV is never persisted. Detokenization requires both the internal `adapterCredential` and matching `merchant_id`, verified by the 100-payment `runPciGrepTest()`.
+3. **How do you design webhooks a merchant can trust?**
+   - Asynchronous outbox delivery signed with `HMAC-SHA256(secret, timestamp.rawBody)`, fresh timestamps on exponential backoff retries (`1m, 5m, 30m, 2h, 6h, 24h`), 24h `FAILING` circuit flagging + manual resend, and `event_id` deduplication at the receiver.
