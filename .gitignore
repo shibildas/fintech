@@ -18,6 +18,14 @@ build/
 coverage/
 *.tsbuildinfo
 
+# Runtime generated reports, settlement CSVs & exports (keep checked-in samples/)
+**/reports/
+**/settlement-output/
+**/exports/
+*.tmp.csv
+*.tmp.json
+!projects/*/samples/
+
 # Environment & Secrets
 .env
 .env.*
