@@ -1,0 +1,14 @@
+{
+  "name": "@fintech/project3-consumer-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Project 3 — UPI-Style Consumer App, Device Security & Real-Time Risk Engine",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@fintech/core": "1.0.0",
+    "@fintech/project1-switch": "1.0.0"
+  }
+}

@@ -9,10 +9,11 @@
     "projects/*"
   ],
   "scripts": {
-    "test": "node --test packages/core/test/*.test.ts projects/project1-switch/test/*.test.ts projects/project2-gateway/test/*.test.ts",
+    "test": "node --test packages/core/test/*.test.ts projects/project1-switch/test/*.test.ts projects/project2-gateway/test/*.test.ts projects/project3-consumer-app/test/*.test.ts",
     "test:core": "node --test packages/core/test/*.test.ts",
     "test:p1": "node --test projects/project1-switch/test/*.test.ts",
-    "test:p2": "node --test projects/project2-gateway/test/*.test.ts"
+    "test:p2": "node --test projects/project2-gateway/test/*.test.ts",
+    "test:p3": "node --test projects/project3-consumer-app/test/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6"
