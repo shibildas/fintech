@@ -16,6 +16,7 @@ export * from "./dsa-tree-traversal.ts";
 export * from "./dsa-fee-rounding-dp.ts";
 export * from "./dsa-device-auth.ts";
 export * from "./dsa-qr-parser.ts";
+export * from "./dsa-distinct-window.ts";
 
 
 
