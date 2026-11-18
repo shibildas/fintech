@@ -14,6 +14,7 @@ export * from "./dsa-rate-limiter.ts";
 export * from "./dsa-concurrency-cas.ts";
 export * from "./dsa-tree-traversal.ts";
 export * from "./dsa-fee-rounding-dp.ts";
+export * from "./dsa-device-auth.ts";
 
 
 
