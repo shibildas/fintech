@@ -71,6 +71,23 @@ fintech/
 ### Prerequisites
 - **Node.js `24+`** (uses built-in TypeScript type-stripping, `node:sqlite`, `node:crypto`, and `node:test`)
 
+### Run & Dev Orchestration
+
+```bash
+# Start all 3 services (Switch Admin Console, Gateway, Consumer App)
+npm start
+
+# Development mode with Node 24 file-watch auto-restart
+npm run dev
+
+# Start individual services
+npm run start:p1   # Switch & Admin Console (default: http://127.0.0.1:3001)
+npm run start:p2   # Payment Gateway      (default: http://127.0.0.1:3002)
+npm run start:p3   # Consumer App & Risk  (default: http://127.0.0.1:3003)
+```
+
+Ports can be overridden via `SWITCH_PORT`, `GATEWAY_PORT`, and `CONSUMER_PORT`.
+
 ### Install & Run Tests
 
 ```bash

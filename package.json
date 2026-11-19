@@ -10,6 +10,11 @@
     "projects/*"
   ],
   "scripts": {
+    "start": "node scripts/orchestrate.ts",
+    "dev": "node --watch scripts/orchestrate.ts",
+    "start:p1": "node scripts/orchestrate.ts --only=p1",
+    "start:p2": "node scripts/orchestrate.ts --only=p2",
+    "start:p3": "node scripts/orchestrate.ts --only=p3",
     "test": "node --test packages/core/test/*.test.ts projects/project1-switch/test/*.test.ts projects/project2-gateway/test/*.test.ts projects/project3-consumer-app/test/*.test.ts",
     "test:core": "node --test packages/core/test/*.test.ts",
     "test:p1": "node --test projects/project1-switch/test/*.test.ts",
