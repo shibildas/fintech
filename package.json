@@ -2,6 +2,7 @@
   "name": "fintech-infrastructure-stack",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "description": "Payments & Fintech Infrastructure — 4-Project Stack (Switch, Gateway, Consumer App + Risk, Mandates & Subscriptions)",
   "type": "module",
   "workspaces": [
