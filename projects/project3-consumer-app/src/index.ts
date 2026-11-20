@@ -4,6 +4,10 @@ import { ConsumerPayEngine } from "./pay-flows.ts";
 
 export * from "./psp-backend.ts";
 export * from "./pay-flows.ts";
+export * from "./collect-and-limits.ts";
+export * from "./risk-engine.ts";
+export * from "./risk-shadow-mode.ts";
+export * from "./dispute-desk.ts";
 
 export function createSeededConsumerPspTopology() {
   const p1 = createSeededTopology();
