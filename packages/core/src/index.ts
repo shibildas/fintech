@@ -19,6 +19,7 @@ export * from "./dsa-qr-parser.ts";
 export * from "./dsa-distinct-window.ts";
 export * from "./dsa-running-median.ts";
 export * from "./dsa-rule-ast.ts";
+export * from "./dsa-sla-heap.ts";
 
 
 
