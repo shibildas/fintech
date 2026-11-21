@@ -23,6 +23,7 @@ export * from "./dsa-sla-heap.ts";
 export * from "./dsa-interval-capacity.ts";
 export * from "./dsa-calendar-proration.ts";
 export * from "./dsa-distributed-lease.ts";
+export * from "./dsa-batch-diff.ts";
 
 
 
