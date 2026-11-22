@@ -25,6 +25,7 @@ export * from "./dsa-calendar-proration.ts";
 export * from "./dsa-distributed-lease.ts";
 export * from "./dsa-batch-diff.ts";
 export * from "./dsa-dunning-schedule.ts";
+export * from "./dsa-mrr-timeseries.ts";
 
 
 
