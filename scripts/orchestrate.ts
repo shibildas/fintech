@@ -6,22 +6,23 @@ import {
 } from "@fintech/project1-switch";
 import { createSeededGatewayTopology } from "@fintech/project2-gateway";
 import { createSeededConsumerPspTopology } from "@fintech/project3-consumer-app";
+import { MandateService, SubscriptionService } from "@fintech/project4-mandates";
 
-type ServiceTarget = "p1" | "p2" | "p3";
+type ServiceTarget = "p1" | "p2" | "p3" | "p4";
 
 function parseTargets(argv: string[]): Set<ServiceTarget> {
   const onlyArg = argv.find((arg) => arg.startsWith("--only="));
   if (!onlyArg) {
-    return new Set<ServiceTarget>(["p1", "p2", "p3"]);
+    return new Set<ServiceTarget>(["p1", "p2", "p3", "p4"]);
   }
 
   const raw = onlyArg.slice("--only=".length).split(",").map((s) => s.trim());
   const targets = new Set<ServiceTarget>();
   for (const item of raw) {
-    if (item === "p1" || item === "p2" || item === "p3") {
+    if (item === "p1" || item === "p2" || item === "p3" || item === "p4") {
       targets.add(item);
     } else {
-      throw new Error(`Unknown service target "${item}". Expected p1, p2, or p3.`);
+      throw new Error(`Unknown service target "${item}". Expected p1, p2, p3, or p4.`);
     }
   }
   return targets;
@@ -134,11 +135,49 @@ function startConsumerAppServer(port: number): Promise<http.Server> {
   });
 }
 
+function startMandatesServer(port: number): Promise<http.Server> {
+  const mandates = new MandateService();
+  const subs = new SubscriptionService({ mandates });
+
+  const server = http.createServer((req, res) => {
+    const url = req.url ?? "/";
+    if (req.method === "GET" && url === "/health") {
+      writeJson(res, 200, {
+        service: "project4-mandates",
+        status: "UP",
+        rails: ["UPI_AUTOPAY", "E_NACH"],
+        mandateServiceReady: Boolean(mandates),
+        subscriptionServiceReady: Boolean(subs),
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url === "/") {
+      writeJson(res, 200, {
+        service: "project4-mandates",
+        endpoints: ["/health"],
+      });
+      return;
+    }
+
+    writeJson(res, 404, { error: "Not Found" });
+  });
+
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, "127.0.0.1", () => {
+      console.log(`[p4:mandates] http://127.0.0.1:${port}  (/, /health)`);
+      resolve(server);
+    });
+  });
+}
+
 async function main(): Promise<void> {
   const targets = parseTargets(process.argv.slice(2));
   const switchPort = Number(process.env.SWITCH_PORT ?? 3001);
   const gatewayPort = Number(process.env.GATEWAY_PORT ?? 3002);
   const consumerPort = Number(process.env.CONSUMER_PORT ?? 3003);
+  const mandatesPort = Number(process.env.MANDATES_PORT ?? 3004);
 
   const servers: http.Server[] = [];
 
@@ -150,6 +189,9 @@ async function main(): Promise<void> {
   }
   if (targets.has("p3")) {
     servers.push(await startConsumerAppServer(consumerPort));
+  }
+  if (targets.has("p4")) {
+    servers.push(await startMandatesServer(mandatesPort));
   }
 
   console.log("Fintech stack orchestrator ready. Press Ctrl+C to stop.");
