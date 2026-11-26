@@ -1,6 +1,11 @@
 import http from "node:http";
 import crypto from "node:crypto";
-import { redactSensitiveData } from "../../../packages/core/src/index.ts";
+import {
+  redactSensitiveData,
+  CORS_HEADERS,
+  renderFintechShellHtml,
+  maskAccountNumber,
+} from "../../../packages/core/src/index.ts";
 import { CentralSwitch } from "./switch-engine.ts";
 import { SettlementEngine } from "./settlement-engine.ts";
 import {
@@ -46,26 +51,36 @@ export class SwitchAdminApp {
     { total: number; success: number; error: number }
   >();
   public readonly structuredLogs: Array<Record<string, unknown>> = [];
+  private readonly adminToken?: string;
 
   constructor(params: {
     sw: CentralSwitch;
     topology: SeededProject1Topology;
+    adminToken?: string;
   }) {
     this.sw = params.sw;
     this.topology = params.topology;
+    this.adminToken = params.adminToken;
     this.settlement = new SettlementEngine(this.sw.db, this.sw.audit);
     this.reconciliation = new ReconciliationEngine(this.sw.db, this.sw.audit);
   }
 
   /**
-   * Common Rule 11: Enforces Role-Based Access Control (RBAC).
-   * - `operator`: read, run settlement/reconciliation, resolve exceptions
-   * - `admin`: change configuration, chaos rules, participant status
+   * Common Rule 11: Enforces Role-Based Access Control (RBAC) + optional strict `X-Admin-Token`.
    */
   private requireRole(
     headers: Record<string, string | undefined>,
     minimumRole: ConsoleRole
   ): { actorId: string; role: ConsoleRole } {
+    if (this.adminToken) {
+      const providedToken = headers["x-admin-token"] ?? headers["X-Admin-Token"];
+      if (!providedToken || providedToken !== this.adminToken) {
+        throw Object.assign(
+          new Error("Unauthorized (HTTP 401): Missing or invalid X-Admin-Token"),
+          { statusCode: 401 }
+        );
+      }
+    }
     const rawRole = (headers["x-role"] ?? headers["X-Role"] ?? "operator")
       .toLowerCase()
       .trim();
@@ -112,6 +127,7 @@ export class SwitchAdminApp {
       return {
         ...response,
         headers: {
+          ...CORS_HEADERS,
           "x-request-id": requestId,
           ...response.headers,
         },
@@ -125,6 +141,7 @@ export class SwitchAdminApp {
       return {
         statusCode,
         headers: {
+          ...CORS_HEADERS,
           "content-type": "application/json",
           "x-request-id": requestId,
         },
@@ -141,6 +158,60 @@ export class SwitchAdminApp {
     body: unknown,
     requestId: string
   ): Promise<ApiResponse> {
+    if (method === "OPTIONS") {
+      return { statusCode: 204, headers: { ...CORS_HEADERS }, body: "" };
+    }
+
+    // Live Balances & Interactive Demo Pay endpoints (Slice 01)
+    if (method === "GET" && pathname === "/api/balances") {
+      this.requireRole(headers, "operator");
+      const accounts = [
+        { bank: "BANKA", vpa: "anita@psp1", acct: "987654324521", sim: this.topology.banks.BANKA },
+        { bank: "BANKB", vpa: "rahul@psp1", acct: "876543218899", sim: this.topology.banks.BANKB },
+        { bank: "BANKB", vpa: "coffee@psp2", acct: "876543217766", sim: this.topology.banks.BANKB },
+        { bank: "BANKC", vpa: "shop@psp2", acct: "765432103344", sim: this.topology.banks.BANKC },
+      ].map((item) => {
+        const b = item.sim.ledger.getBalance(item.acct);
+        return {
+          bank: item.bank,
+          vpa: item.vpa,
+          account_masked: maskAccountNumber(item.acct),
+          ledger_balance_paise: b.ledger_balance_paise,
+          available_balance_paise: b.available_balance_paise,
+        };
+      });
+      return this.json(200, { active_cycle_id: this.sw.activeCycleId, accounts });
+    }
+
+    if (method === "POST" && pathname === "/api/pay-demo") {
+      this.requireRole(headers, "operator");
+      const p = (body ?? {}) as {
+        payerVpa?: string;
+        payeeVpa?: string;
+        amountPaise?: number;
+        rawPin?: string;
+        transactionId?: string;
+      };
+      const payerVpa = (p.payerVpa ?? "anita@psp1").toLowerCase();
+      const psp = payerVpa.endsWith("@psp2") ? this.topology.psps.PSP2 : this.topology.psps.PSP1;
+      const env = psp.createSignedRequestEnvelope({
+        mti: "0200",
+        processingCode: "PAY",
+        transactionId: p.transactionId ?? `UI-TXN-${crypto.randomUUID().slice(0, 8)}`,
+        payerVpa,
+        payeeVpa: (p.payeeVpa ?? "shop@psp2").toLowerCase(),
+        amountPaise: Number(p.amountPaise ?? 10_000),
+      });
+      const result = await this.sw.handlePay({
+        envelope: env,
+        rawPin: String(p.rawPin ?? "1234"),
+      });
+      return this.json(200, {
+        transaction: result.transaction,
+        hops: result.hops,
+        state_history: this.sw.listStateHistoryByRrn(result.transaction.rrn),
+      });
+    }
     // 1. Common Rule 12: Health & Prometheus Metrics Endpoints
     if (method === "GET" && pathname === "/health") {
       return this.json(200, {
@@ -471,37 +542,106 @@ export class SwitchAdminApp {
   }
 
   private renderAdminConsoleHtml(): string {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Project 1 — UPI Switch Admin Console</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 24px; background: #0f172a; color: #f8fafc; }
-    h1, h2 { color: #38bdf8; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-    .card { background: #1e293b; padding: 16px; border-radius: 8px; border: 1px solid #334155; }
-    code { background: #0f172a; padding: 2px 6px; border-radius: 4px; color: #7dd3fc; }
-  </style>
-</head>
-<body>
-  <h1>Project 1 — UPI Switch, Settlement & Three-Way Reconciliation Console</h1>
-  <div class="grid">
-    <div class="card">
-      <h2>Live Transactions & 6-Hop Trace</h2>
-      <p>Search by RRN, Transaction ID, VPA or Amount via <code>GET /transactions?q=</code> and <code>GET /transactions/{rrn}</code>.</p>
-    </div>
-    <div class="card">
-      <h2>Participant Health & Chaos Injection</h2>
-      <p>Monitor BANKA, BANKB, BANKC, PSP1, PSP2 via <code>GET /metrics</code> and inject latency/errors/hangs via <code>PUT /participants/{id}/chaos</code>.</p>
-    </div>
-    <div class="card">
-      <h2>T+1 Settlement & 3-Way Reconciliation</h2>
-      <p>Generate immutable CSV manifests via <code>POST /cycles/{id}/run</code> and run 3-way reconciliation via <code>POST /cycles/{id}/reconcile</code>.</p>
-    </div>
-  </div>
-</body>
-</html>`;
+    return renderFintechShellHtml({
+      title: "Project 1 — UPI Central Switch, Settlement & 3-Way Recon",
+      subtitle: "ISO 8583 6-Hop Pay • Chaos Injection • T+1 Multilateral Netting • Persistent .data/ SQLite",
+      activePort: 3001,
+      bodyHtml: `
+        <div class="auth-bar">
+          <label>X-Admin-Token (see server stdout)<input id="p1Token" type="password" placeholder="Paste X-Admin-Token" /></label>
+          <label>RBAC Role (X-Role)<select id="p1Role"><option value="operator">operator</option><option value="admin">admin</option></select></label>
+          <button onclick="loadBalances()">Refresh Balances</button>
+          <button class="secondary" onclick="loadTxns()">Recent Transactions</button>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h2>1. Live Bank Core Balances</h2>
+            <pre id="balOut" class="out">Enter X-Admin-Token and click Refresh Balances...</pre>
+          </div>
+          <div class="card">
+            <h2>2. Execute 6-Hop UPI Pay</h2>
+            <div class="row">
+              <label>Payer VPA<input id="payerVpa" value="anita@psp1" /></label>
+              <label>Payee VPA<input id="payeeVpa" value="shop@psp2" /></label>
+            </div>
+            <div class="row">
+              <label>Amount (paise)<input id="amountPaise" type="number" value="50000" /></label>
+              <label>UPI PIN<input id="rawPin" type="password" placeholder="Enter PIN" /></label>
+              <button onclick="sendPay()">Send 0200 PAY</button>
+            </div>
+            <pre id="payOut" class="out">6-hop ISO 8583 trace will appear here...</pre>
+          </div>
+          <div class="card">
+            <h2>3. Bank Chaos Control (Admin RBAC)</h2>
+            <div class="row">
+              <label>Bank<select id="chaosBank"><option>BANKA</option><option>BANKB</option><option>BANKC</option></select></label>
+              <label>Mode<select id="chaosMode"><option value="normal">Normal (Healthy)</option><option value="hang">debitThenHang (CHK Recovery)</option><option value="down">forceDown (0420 Reversal)</option></select></label>
+              <button class="danger" onclick="applyChaos()">Apply Chaos</button>
+            </div>
+            <pre id="chaosOut" class="out">Try with role=operator (403) vs role=admin (200)...</pre>
+          </div>
+          <div class="card">
+            <h2>4. T+1 Settlement & 3-Way Reconciliation</h2>
+            <div class="row">
+              <button onclick="runSettlement()">Run Settlement Cycle</button>
+              <button class="secondary" onclick="runRecon()">Run 3-Way Recon</button>
+            </div>
+            <pre id="reconOut" class="out">Settlement net positions & 3-way recon results...</pre>
+          </div>
+        </div>`,
+      scriptJs: `
+        function p1Headers() {
+          return {
+            "content-type": "application/json",
+            "x-admin-token": document.getElementById("p1Token").value.trim(),
+            "x-role": document.getElementById("p1Role").value
+          };
+        }
+        async function loadBalances() {
+          const r = await fetch("/api/balances", { headers: p1Headers() });
+          show("balOut", { status: r.status, body: await r.json() });
+        }
+        async function loadTxns() {
+          const r = await fetch("/transactions", { headers: p1Headers() });
+          show("balOut", { status: r.status, body: await r.json() });
+        }
+        async function sendPay() {
+          const r = await fetch("/api/pay-demo", {
+            method: "POST",
+            headers: p1Headers(),
+            body: JSON.stringify({
+              payerVpa: document.getElementById("payerVpa").value,
+              payeeVpa: document.getElementById("payeeVpa").value,
+              amountPaise: Number(document.getElementById("amountPaise").value),
+              rawPin: document.getElementById("rawPin").value
+            })
+          });
+          show("payOut", { status: r.status, body: await r.json() });
+          if (r.ok) loadBalances();
+        }
+        async function applyChaos() {
+          const bank = document.getElementById("chaosBank").value;
+          const mode = document.getElementById("chaosMode").value;
+          const payload = mode === "hang" ? { debitThenHang: true, forceDown: false }
+                        : mode === "down" ? { debitThenHang: false, forceDown: true }
+                        : { debitThenHang: false, forceDown: false };
+          const r = await fetch("/participants/" + bank + "/chaos", {
+            method: "PUT",
+            headers: p1Headers(),
+            body: JSON.stringify(payload)
+          });
+          show("chaosOut", { status: r.status, body: await r.json() });
+        }
+        async function runSettlement() {
+          const r = await fetch("/cycles/${this.sw.activeCycleId}/run", { method: "POST", headers: p1Headers(), body: "{}" });
+          show("reconOut", { status: r.status, body: await r.json() });
+        }
+        async function runRecon() {
+          const r = await fetch("/cycles/${this.sw.activeCycleId}/reconcile", { method: "POST", headers: p1Headers(), body: "{}" });
+          show("reconOut", { status: r.status, body: await r.json() });
+        }
+      `,
+    });
   }
 
   public createHttpServer(): http.Server {

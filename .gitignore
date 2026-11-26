@@ -6,6 +6,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # SQLite Databases & WAL files
+.data/
 *.db
 *.db-shm
 *.db-wal
