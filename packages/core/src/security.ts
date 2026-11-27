@@ -102,10 +102,32 @@ export function maskAccountNumber(accountNumber: string): string {
   return `XXXX${trimmed.slice(-4)}`;
 }
 
+/**
+ * Constant-time bearer token comparison using SHA-256 digests so token lengths
+ * and byte positions never leak via timing side-channels.
+ */
+export function timingSafeTokenEqual(
+  provided: string | undefined,
+  expected: string
+): boolean {
+  if (!provided) return false;
+  const a = crypto.createHash("sha256").update(provided).digest();
+  const b = crypto.createHash("sha256").update(expected).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 const SENSITIVE_KEYS = new Set([
   "pin",
   "upi_pin",
   "upipin",
+  "rawpin",
+  "raw_pin",
+  "upirawpin",
+  "upi_raw_pin",
+  "authcredential",
+  "auth_credential",
+  "clientpinproofhex",
+  "client_pin_proof_hex",
   "cvv",
   "card_number",
   "cardnumber",
@@ -114,6 +136,9 @@ const SENSITIVE_KEYS = new Set([
   "shared_secret",
   "private_key",
   "otp",
+  "cardotp",
+  "card_otp",
+  "password",
 ]);
 
 const PAN_REGEX = /\b(?:\d[ -]*?){13,19}\b/g;

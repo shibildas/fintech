@@ -532,6 +532,18 @@ export class ConsumerPspBackend {
       throw new Error(`Account "${params.accountNumber}" not found at bank "${params.bankId}"`);
     }
 
+    const existing = this.db
+      .prepare(
+        `SELECT * FROM linked_accounts
+         WHERE customer_id = ? AND bank_id = ? AND account_number = ?`
+      )
+      .get(params.customerId, bank.config.bankId, acct.account_number) as unknown as
+      | LinkedBankAccountRecord
+      | undefined;
+    if (existing) {
+      return existing;
+    }
+
     const id = `lnk_${crypto.randomUUID().slice(0, 10)}`;
     const nowIso = (params.now ?? new Date()).toISOString();
     const isPrimary = params.isPrimary ? 1 : 0;

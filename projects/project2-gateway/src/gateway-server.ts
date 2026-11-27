@@ -1,27 +1,25 @@
 import http from "node:http";
 import path from "node:path";
 import {
-  CORS_HEADERS,
+  buildCorsHeaders,
   ensureDataDir,
+  mapErrorToHttpStatus,
   readRawAndJsonBody,
   writeJsonResponse,
   writeHtmlResponse,
-  renderFintechShellHtml,
 } from "@fintech/core";
 import { CentralSwitch, createSeededTopology } from "@fintech/project1-switch";
 import { AcquirerSimulator } from "./acquirer-simulator.ts";
 import { PaymentGatewayEngine } from "./gateway-engine.ts";
 import { TokenVaultService, runPciGrepTest } from "./token-vault.ts";
 import { DemoStoreWebhookReceiver } from "./webhook-worker.ts";
+import { renderGatewayUiHtml } from "./gateway-ui.ts";
 
 /**
  * Slices 02 & 03 — Project 2 Live HTTP Server & Interactive Web UI (:3002)
  *
  * - Persistent `.data/p2-gateway.sqlite` + strictly isolated `.data/p2-vault.sqlite`
- * - Strict manual HMAC-SHA256 auth (`X-Key-Id`, `X-Timestamp`, `X-Signature`)
- * - Endpoints: Orders, Vault Tokenize, Payments (Card 3DS + UPI), Acquirer Chaos/Health,
- *   Live PCI Grep Audit, Partial Refunds (422 guard), Webhooks (500 toggle + Resend),
- *   T+1 Payout CSVs & Dual-Secret Overlap Key Rotation.
+ * - Strict manual HMAC-SHA256 auth (`X-Key-Id`, `X-Timestamp`, `X-Signature`) + merchant tenant isolation
  */
 
 export interface GatewayHttpServerContext {
@@ -42,15 +40,14 @@ export function createPersistentGatewayContext(options?: {
   if (options?.dataDir) {
     ensureDataDir(options.dataDir);
   }
-  const gwDbPath = options?.dataDir
-    ? path.join(options.dataDir, "p2-gateway.sqlite")
-    : ":memory:";
-  const vaultDbPath = options?.dataDir
-    ? path.join(options.dataDir, "p2-vault.sqlite")
-    : ":memory:";
+  const gwDbPath = options?.dataDir ? path.join(options.dataDir, "p2-gateway.sqlite") : ":memory:";
+  const vaultDbPath = options?.dataDir ? path.join(options.dataDir, "p2-vault.sqlite") : ":memory:";
+  const p2BanksDir = options?.dataDir ? path.join(options.dataDir, "p2-banks") : undefined;
+  const p2SwitchPath = options?.dataDir ? path.join(options.dataDir, "p2-switch.sqlite") : ":memory:";
 
-  const p1 = createSeededTopology();
+  const p1 = createSeededTopology(p2BanksDir ? { dataDir: p2BanksDir } : undefined);
   const sw = new CentralSwitch({
+    dbPath: p2SwitchPath,
     bankTimeoutMs: 500,
     maxCreditRetries: 2,
     activeCycleId: "CYC-2026-11-26",
@@ -96,7 +93,6 @@ export function createPersistentGatewayContext(options?: {
   gateway.routing.addRoutingRule({ id: "r2", method: "CARD", priorityOrder: 2, acquirerId: "ACQ_BETA" });
   gateway.routing.addRoutingRule({ id: "r3", method: "CARD", priorityOrder: 3, acquirerId: "ACQ_GAMMA" });
 
-  // Idempotently load or seed the demo merchant
   const existingMerchant = gateway.gatewayDb
     .prepare(`SELECT id FROM merchants WHERE business_name = 'Acme Books Store' LIMIT 1`)
     .get() as { id: string } | undefined;
@@ -160,7 +156,6 @@ export function createPersistentGatewayContext(options?: {
 
 export class GatewayHttpServer {
   public readonly ctx: GatewayHttpServerContext;
-  private readonly trackedRawPansForAudit = new Set<string>();
 
   constructor(ctx: GatewayHttpServerContext) {
     this.ctx = ctx;
@@ -184,21 +179,62 @@ export class GatewayHttpServer {
     });
   }
 
+  private assertMerchantOwnsOrder(orderId: string, merchantId: string): void {
+    const row = this.ctx.gateway.gatewayDb
+      .prepare(`SELECT merchant_id FROM orders WHERE id = ?`)
+      .get(orderId) as { merchant_id: string } | undefined;
+    if (!row) {
+      throw Object.assign(new Error(`Order "${orderId}" not found`), { statusCode: 404 });
+    }
+    if (row.merchant_id !== merchantId) {
+      throw Object.assign(new Error("Forbidden (HTTP 403): Order belongs to another merchant"), { statusCode: 403 });
+    }
+  }
+
+  private assertMerchantOwnsPayment(paymentId: string, merchantId: string): void {
+    const row = this.ctx.gateway.gatewayDb
+      .prepare(`SELECT merchant_id FROM payments WHERE id = ?`)
+      .get(paymentId) as { merchant_id: string } | undefined;
+    if (!row) {
+      throw Object.assign(new Error(`Payment "${paymentId}" not found`), { statusCode: 404 });
+    }
+    if (row.merchant_id !== merchantId) {
+      throw Object.assign(new Error("Forbidden (HTTP 403): Payment belongs to another merchant"), { statusCode: 403 });
+    }
+  }
+
+  private assertMerchantOwnsDelivery(deliveryId: string, merchantId: string): void {
+    const row = this.ctx.gateway.gatewayDb
+      .prepare(
+        `SELECT e.merchant_id FROM webhook_deliveries d
+         JOIN webhook_endpoints e ON d.endpoint_id = e.id
+         WHERE d.id = ?`
+      )
+      .get(deliveryId) as { merchant_id: string } | undefined;
+    if (!row) {
+      throw Object.assign(new Error(`Webhook delivery "${deliveryId}" not found`), { statusCode: 404 });
+    }
+    if (row.merchant_id !== merchantId) {
+      throw Object.assign(new Error("Forbidden (HTTP 403): Webhook delivery belongs to another merchant"), { statusCode: 403 });
+    }
+  }
+
   public createHttpServer(): http.Server {
     return http.createServer(async (req, res) => {
       const method = (req.method ?? "GET").toUpperCase();
       const url = new URL(req.url ?? "/", "http://127.0.0.1");
       const pathname = url.pathname;
+      const origin = req.headers.origin;
 
       if (method === "OPTIONS") {
-        res.writeHead(204, CORS_HEADERS);
+        res.writeHead(204, buildCorsHeaders(origin));
         res.end();
         return;
       }
 
       try {
         if (method === "GET" && pathname === "/") {
-          writeHtmlResponse(res, 200, this.renderUiHtml());
+          writeHtmlResponse(res, 200, renderGatewayUiHtml(), origin);
           return;
         }
 
@@ -207,29 +243,24 @@ export class GatewayHttpServer {
             service: "project2-gateway",
             status: "UP",
             acquirers: this.ctx.gateway.routing.listAllHealthSnapshots(),
-          });
+          }, origin);
           return;
         }
 
         const { rawBody, json } = await readRawAndJsonBody(req);
 
-        // Direct Browser -> Isolated PCI Token Vault (no merchant secret required for card tokenization, scoped to merchantId)
+        // Direct Browser -> Isolated PCI Token Vault (never retains raw PAN in Gateway RAM)
         if (method === "POST" && pathname === "/api/vault/tokenize") {
-          const cardNumber = String(json.cardNumber ?? "");
-          if (cardNumber) {
-            this.trackedRawPansForAudit.add(cardNumber.replace(/[\s-]/g, ""));
-          }
           const meta = this.ctx.gateway.vault.tokenize({
-            cardNumber,
+            cardNumber: String(json.cardNumber ?? ""),
             expiry: String(json.expiry ?? "12/29"),
             merchantId: String(json.merchantId ?? this.ctx.seededMerchantId),
             customerReference: json.customerReference ? String(json.customerReference) : null,
           });
-          writeJsonResponse(res, 201, meta);
+          writeJsonResponse(res, 201, meta, origin);
           return;
         }
 
-        // All merchant API routes below enforce strict manual HMAC-SHA256 authentication
         const auth = this.authenticate(req, rawBody);
 
         if (method === "POST" && pathname === "/api/orders") {
@@ -241,32 +272,37 @@ export class GatewayHttpServer {
             merchantOrderId: String(json.merchantOrderId ?? `rcpt_${Date.now()}`),
             customerReference: json.customerReference ? String(json.customerReference) : undefined,
           });
-          writeJsonResponse(res, 201, result);
+          writeJsonResponse(res, 201, result, origin);
           return;
         }
 
         if (method === "POST" && pathname === "/api/payments") {
+          const orderId = String(json.orderId ?? "");
+          this.assertMerchantOwnsOrder(orderId, auth.merchant.id);
           const resPay = await this.ctx.gateway.payOrder({
-            orderId: String(json.orderId ?? ""),
+            orderId,
             method: (json.method as "CARD" | "UPI" | "NETBANKING" | "WALLET") ?? "CARD",
             tokenId: json.tokenId ? String(json.tokenId) : undefined,
             cardOtp: json.cardOtp !== undefined ? String(json.cardOtp) : undefined,
             upiPayerVpa: json.upiPayerVpa ? String(json.upiPayerVpa) : undefined,
             upiRawPin: json.upiRawPin ? String(json.upiRawPin) : undefined,
           });
-          writeJsonResponse(res, 200, resPay);
+          writeJsonResponse(res, 200, resPay, origin);
           return;
         }
 
         if (method === "GET" && pathname === "/api/acquirers/health") {
           writeJsonResponse(res, 200, {
             snapshots: this.ctx.gateway.routing.listAllHealthSnapshots(),
-          });
+          }, origin);
           return;
         }
 
         const acqMatch = pathname.match(/^\/api\/acquirers\/([^/]+)\/chaos$/);
         if (method === "PUT" && acqMatch) {
+          if (auth.mode !== "LIVE") {
+            throw Object.assign(new Error("Forbidden (HTTP 403): LIVE key required for acquirer chaos controls"), { statusCode: 403 });
+          }
           const id = decodeURIComponent(acqMatch[1]).toUpperCase();
           const map: Record<string, AcquirerSimulator> = {
             ACQ_ALPHA: this.ctx.acqAlpha,
@@ -275,39 +311,59 @@ export class GatewayHttpServer {
           };
           const sim = map[id];
           if (!sim) {
-            writeJsonResponse(res, 404, { error: `Unknown acquirer "${id}"` });
+            writeJsonResponse(res, 404, { error: `Unknown acquirer "${id}"` }, origin);
             return;
           }
-          const updated = sim.setChaos({
-            forceDown: Boolean(json.forceDown),
-            forceRefundFail: Boolean(json.forceRefundFail),
-          });
-          writeJsonResponse(res, 200, { acquirerId: id, chaos: updated });
+          const patch: Parameters<AcquirerSimulator["setChaos"]>[0] = {};
+          if (json.forceDown !== undefined) patch.forceDown = Boolean(json.forceDown);
+          if (json.forceRefundFail !== undefined) patch.forceRefundFail = Boolean(json.forceRefundFail);
+          if (json.technicalFailureRatePercent !== undefined) {
+            const pct = Number(json.technicalFailureRatePercent);
+            if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+              throw Object.assign(new Error("technicalFailureRatePercent must be between 0 and 100"), { statusCode: 400 });
+            }
+            patch.technicalFailureRatePercent = pct;
+          }
+          if (json.latencyMs !== undefined) {
+            const lat = Number(json.latencyMs);
+            if (!Number.isFinite(lat) || lat < 0) {
+              throw Object.assign(new Error("latencyMs must be a non-negative number"), { statusCode: 400 });
+            }
+            patch.latencyMs = lat;
+          }
+          const updated = sim.setChaos(patch);
+          writeJsonResponse(res, 200, { acquirerId: id, chaos: updated }, origin);
           return;
         }
 
         if (method === "GET" && pathname === "/api/pci-grep-audit") {
+          const customPans = (url.searchParams.get("pans") ?? "")
+            .split(",")
+            .map((s) => s.replace(/[\s-]/g, ""))
+            .filter((s) => s.length >= 13);
+          const rawPansUsed = customPans.length > 0 ? customPans : ["4111111111114242", "5555555555554444"];
           const audit = runPciGrepTest({
             gatewayDb: this.ctx.gateway.gatewayDb,
             vaultDb: this.ctx.gateway.vault.vaultDb,
             structuredLogs: this.ctx.gateway.structuredLogs,
-            rawPansUsed: Array.from(this.trackedRawPansForAudit),
+            rawPansUsed,
           });
           writeJsonResponse(res, 200, {
-            tracked_pans_checked: this.trackedRawPansForAudit.size,
+            tracked_pans_checked: rawPansUsed.length,
             ...audit,
-          });
+          }, origin);
           return;
         }
 
-        // Slice 03: Refunds, Ledger Parity, Payouts, Webhooks & Key Rotation
         if (method === "POST" && pathname === "/api/refunds") {
+          const paymentId = String(json.paymentId ?? "");
+          this.assertMerchantOwnsPayment(paymentId, auth.merchant.id);
           const refRes = await this.ctx.gateway.createRefund({
-            paymentId: String(json.paymentId ?? ""),
+            paymentId,
             amountPaise: Number(json.amountPaise ?? 0),
             idempotencyKey: String(json.idempotencyKey ?? `ref_${Date.now()}`),
           });
-          writeJsonResponse(res, 201, refRes);
+          writeJsonResponse(res, 201, refRes, origin);
           return;
         }
 
@@ -315,7 +371,7 @@ export class GatewayHttpServer {
           writeJsonResponse(res, 200, {
             balances: this.ctx.gateway.getMerchantLedgerBalances(auth.merchant.id),
             parity: this.ctx.gateway.verifyDashboardMatchesLedger(auth.merchant.id),
-          });
+          }, origin);
           return;
         }
 
@@ -324,7 +380,7 @@ export class GatewayHttpServer {
             merchantId: auth.merchant.id,
             periodLabel: json.periodLabel ? String(json.periodLabel) : undefined,
           });
-          writeJsonResponse(res, 200, payout);
+          writeJsonResponse(res, 200, payout, origin);
           return;
         }
 
@@ -337,23 +393,27 @@ export class GatewayHttpServer {
             demoReceiverSimulating500: this.ctx.demoStore.simulateServer500,
             endpoints: eps.map((e) => ({ id: e.id, url: e.url, state: e.state })),
             deliveries,
-          });
+          }, origin);
           return;
         }
 
         if (method === "PUT" && pathname === "/api/webhooks/demo-receiver") {
+          if (auth.mode !== "LIVE") {
+            throw Object.assign(new Error("Forbidden (HTTP 403): LIVE key required"), { statusCode: 403 });
+          }
           this.ctx.demoStore.simulateServer500 = Boolean(json.simulateServer500);
           writeJsonResponse(res, 200, {
             simulateServer500: this.ctx.demoStore.simulateServer500,
-          });
+          }, origin);
           return;
         }
 
         const resendMatch = pathname.match(/^\/api\/webhooks\/deliveries\/([^/]+)\/resend$/);
         if (method === "POST" && resendMatch) {
           const delId = decodeURIComponent(resendMatch[1]);
+          this.assertMerchantOwnsDelivery(delId, auth.merchant.id);
           const resent = await this.ctx.gateway.webhooks.resendDelivery(delId);
-          writeJsonResponse(res, 200, resent);
+          writeJsonResponse(res, 200, resent, origin);
           return;
         }
 
@@ -363,142 +423,16 @@ export class GatewayHttpServer {
             mode: auth.mode,
             overlapWindowMs: Number(json.overlapWindowMs ?? 15 * 60 * 1000),
           });
-          writeJsonResponse(res, 200, rotated);
+          writeJsonResponse(res, 200, rotated, origin);
           return;
         }
 
-        writeJsonResponse(res, 404, { error: "Not Found" });
+        writeJsonResponse(res, 404, { error: "Not Found" }, origin);
       } catch (err: unknown) {
-        const statusCode = (err as { statusCode?: number })?.statusCode ?? 500;
+        const statusCode = mapErrorToHttpStatus(err);
         const message = err instanceof Error ? err.message : String(err);
-        writeJsonResponse(res, statusCode, { error: message });
+        writeJsonResponse(res, statusCode, { error: message }, origin);
       }
-    });
-  }
-
-  private renderUiHtml(): string {
-    return renderFintechShellHtml({
-      title: "Project 2 — Merchant Payment Gateway, PCI Vault & Webhooks",
-      subtitle: "Browser SubtleCrypto HMAC-SHA256 Auth • Isolated p2-vault.sqlite • Smart Failover • Webhooks & Payouts",
-      activePort: 3002,
-      bodyHtml: `
-        <div class="auth-bar">
-          <label>X-Key-Id (see server stdout)<input id="gwKeyId" placeholder="rzp_live_..." /></label>
-          <label>API Secret (signed locally via SubtleCrypto)<input id="gwSecret" type="password" placeholder="sec_live_..." /></label>
-          <button onclick="checkParity()">Ledger Parity</button>
-          <button class="secondary" onclick="runGrepAudit()">PCI Grep Audit</button>
-          <button class="secondary" onclick="rotateKey()">Rotate Key (15m Overlap)</button>
-        </div>
-        <div class="grid">
-          <div class="card">
-            <h2>1. Order -> PCI Token Vault -> 3DS Card / UPI Pay</h2>
-            <div class="row">
-              <label>Amount (paise)<input id="ordAmt" type="number" value="150000" /></label>
-              <label>Card PAN (Vault Only)<input id="cardPan" value="4111111111114242" /></label>
-              <label>3DS OTP (123456=OK, 000000=Decline)<input id="cardOtp" value="123456" /></label>
-            </div>
-            <div class="row">
-              <button onclick="runCardCheckout()">Run Card Checkout</button>
-              <button class="secondary" onclick="runUpiCheckout()">Run UPI Checkout</button>
-            </div>
-            <pre id="payOut" class="out">Enter X-Key-Id + API Secret above, then run checkout...</pre>
-          </div>
-          <div class="card">
-            <h2>2. Smart Acquirer Chaos & Health</h2>
-            <div class="row">
-              <label>Acquirer<select id="acqId"><option>ACQ_ALPHA</option><option>ACQ_BETA</option><option>ACQ_GAMMA</option></select></label>
-              <button class="danger" onclick="setAcqDown(true)">Force Down</button>
-              <button class="secondary" onclick="setAcqDown(false)">Restore Healthy</button>
-              <button class="secondary" onclick="loadAcqHealth()">Refresh Health</button>
-            </div>
-            <pre id="acqOut" class="out">Toggle ACQ_ALPHA down to watch live failover to ACQ_BETA...</pre>
-          </div>
-          <div class="card">
-            <h2>3. Partial Refunds & T+1 Payout CSV</h2>
-            <div class="row">
-              <label>Payment ID<input id="refPayId" placeholder="pay_..." /></label>
-              <label>Refund (paise)<input id="refAmt" type="number" value="50000" /></label>
-              <button onclick="issueRefund()">Refund</button>
-              <button class="secondary" onclick="runPayout()">Run T+1 Payout</button>
-            </div>
-            <pre id="refOut" class="out">Partial refunds, 422 guard, ledger parity & T+1 CSV...</pre>
-          </div>
-          <div class="card">
-            <h2>4. Signed Webhooks & 500 Outage Simulator</h2>
-            <div class="row">
-              <button class="danger" onclick="setWebhook500(true)">Simulate Demo Store 500</button>
-              <button class="secondary" onclick="setWebhook500(false)">Restore 200 OK</button>
-              <button onclick="loadWebhooks()">Refresh Deliveries</button>
-            </div>
-            <div class="row">
-              <label>Delivery ID to Resend<input id="whDelId" placeholder="wh_del_..." /></label>
-              <button onclick="resendWh()">Manual Resend</button>
-            </div>
-            <pre id="whOut" class="out">Webhook delivery attempts & HMAC signatures...</pre>
-          </div>
-        </div>`,
-      scriptJs: `
-        async function hmacHex(secret, msg) {
-          const enc = new TextEncoder();
-          const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-          const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
-          return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
-        }
-        async function signedFetch(method, path, bodyObj) {
-          const keyId = document.getElementById("gwKeyId").value.trim();
-          const secret = document.getElementById("gwSecret").value.trim();
-          const rawBody = bodyObj === undefined ? "" : JSON.stringify(bodyObj);
-          const ts = new Date().toISOString();
-          const sig = secret ? await hmacHex(secret, ts + "." + rawBody) : "";
-          const headers = { "x-key-id": keyId, "x-timestamp": ts, "x-signature": sig };
-          if (bodyObj !== undefined) headers["content-type"] = "application/json";
-          const r = await fetch(path, { method, headers, body: bodyObj === undefined ? undefined : rawBody });
-          return { status: r.status, body: await r.json() };
-        }
-        async function runCardCheckout() {
-          const amt = Number(document.getElementById("ordAmt").value);
-          const ord = await signedFetch("POST", "/api/orders", { amountPaise: amt, idempotencyKey: "ui_ord_" + Date.now(), merchantOrderId: "rcpt_" + Date.now() });
-          if (ord.status !== 201) return show("payOut", ord);
-          const tokRes = await fetch("/api/vault/tokenize", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ cardNumber: document.getElementById("cardPan").value, expiry: "12/29", merchantId: ord.body.order.merchant_id })
-          });
-          const tok = await tokRes.json();
-          const pay = await signedFetch("POST", "/api/payments", { orderId: ord.body.order.id, method: "CARD", tokenId: tok.token, cardOtp: document.getElementById("cardOtp").value });
-          if (pay.body?.payment?.id) document.getElementById("refPayId").value = pay.body.payment.id;
-          show("payOut", { token: tok, payment: pay });
-        }
-        async function runUpiCheckout() {
-          const amt = Number(document.getElementById("ordAmt").value);
-          const ord = await signedFetch("POST", "/api/orders", { amountPaise: amt, idempotencyKey: "ui_upi_" + Date.now(), merchantOrderId: "rcpt_upi_" + Date.now() });
-          if (ord.status !== 201) return show("payOut", ord);
-          const pay = await signedFetch("POST", "/api/payments", { orderId: ord.body.order.id, method: "UPI", upiPayerVpa: "anita@psp1", upiRawPin: "1234" });
-          show("payOut", pay);
-        }
-        async function setAcqDown(forceDown) {
-          const id = document.getElementById("acqId").value;
-          show("acqOut", await signedFetch("PUT", "/api/acquirers/" + id + "/chaos", { forceDown }));
-        }
-        async function loadAcqHealth() { show("acqOut", await signedFetch("GET", "/api/acquirers/health")); }
-        async function runGrepAudit() { show("acqOut", await signedFetch("GET", "/api/pci-grep-audit")); }
-        async function checkParity() { show("refOut", await signedFetch("GET", "/api/ledger/parity")); }
-        async function issueRefund() {
-          show("refOut", await signedFetch("POST", "/api/refunds", {
-            paymentId: document.getElementById("refPayId").value.trim(),
-            amountPaise: Number(document.getElementById("refAmt").value),
-            idempotencyKey: "ui_ref_" + Date.now()
-          }));
-        }
-        async function runPayout() { show("refOut", await signedFetch("POST", "/api/payouts/run", {})); }
-        async function setWebhook500(flag) { show("whOut", await signedFetch("PUT", "/api/webhooks/demo-receiver", { simulateServer500: flag })); }
-        async function loadWebhooks() { show("whOut", await signedFetch("GET", "/api/webhooks/deliveries")); }
-        async function resendWh() {
-          const id = document.getElementById("whDelId").value.trim();
-          show("whOut", await signedFetch("POST", "/api/webhooks/deliveries/" + id + "/resend", {}));
-        }
-        async function rotateKey() { show("refOut", await signedFetch("POST", "/api/keys/rotate", { overlapWindowMs: 900000 })); }
-      `,
     });
   }
 }

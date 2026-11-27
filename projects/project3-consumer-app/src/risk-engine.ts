@@ -94,11 +94,27 @@ export class RealTimeRiskEngine {
         latency_ms REAL NOT NULL,
         created_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS risk_blacklist (
+        entity_id TEXT PRIMARY KEY,
+        added_at TEXT NOT NULL
+      );
     `);
+
+    const rows = this.db
+      .prepare(`SELECT entity_id FROM risk_blacklist`)
+      .all() as Array<{ entity_id: string }>;
+    for (const r of rows) {
+      this.blacklistedEntities.add(r.entity_id);
+    }
   }
 
   public addToBlacklist(entityId: string): void {
-    this.blacklistedEntities.add(entityId.trim().toLowerCase());
+    const normalized = entityId.trim().toLowerCase();
+    if (!normalized) return;
+    this.blacklistedEntities.add(normalized);
+    this.db
+      .prepare(`INSERT OR IGNORE INTO risk_blacklist (entity_id, added_at) VALUES (?, ?)`)
+      .run(normalized, new Date().toISOString());
   }
 
   public recordHistoricalPayment(

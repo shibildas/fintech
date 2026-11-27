@@ -2,10 +2,12 @@ import http from "node:http";
 import crypto from "node:crypto";
 import {
   redactSensitiveData,
-  CORS_HEADERS,
-  renderFintechShellHtml,
+  buildCorsHeaders,
   maskAccountNumber,
+  timingSafeTokenEqual,
+  readRawAndJsonBody,
 } from "../../../packages/core/src/index.ts";
+import { renderSwitchAdminHtml } from "./admin-ui.ts";
 import { CentralSwitch } from "./switch-engine.ts";
 import { SettlementEngine } from "./settlement-engine.ts";
 import {
@@ -74,7 +76,7 @@ export class SwitchAdminApp {
   ): { actorId: string; role: ConsoleRole } {
     if (this.adminToken) {
       const providedToken = headers["x-admin-token"] ?? headers["X-Admin-Token"];
-      if (!providedToken || providedToken !== this.adminToken) {
+      if (!timingSafeTokenEqual(providedToken, this.adminToken)) {
         throw Object.assign(
           new Error("Unauthorized (HTTP 401): Missing or invalid X-Admin-Token"),
           { statusCode: 401 }
@@ -113,6 +115,7 @@ export class SwitchAdminApp {
     const pathname = url.pathname;
     const routeKey = `${req.method.toUpperCase()} ${pathname}`;
 
+    const cors = buildCorsHeaders(headers["origin"] ?? headers["Origin"]);
     try {
       const response = await this.route(
         req.method.toUpperCase(),
@@ -127,7 +130,7 @@ export class SwitchAdminApp {
       return {
         ...response,
         headers: {
-          ...CORS_HEADERS,
+          ...cors,
           "x-request-id": requestId,
           ...response.headers,
         },
@@ -141,7 +144,7 @@ export class SwitchAdminApp {
       return {
         statusCode,
         headers: {
-          ...CORS_HEADERS,
+          ...cors,
           "content-type": "application/json",
           "x-request-id": requestId,
         },
@@ -159,7 +162,11 @@ export class SwitchAdminApp {
     requestId: string
   ): Promise<ApiResponse> {
     if (method === "OPTIONS") {
-      return { statusCode: 204, headers: { ...CORS_HEADERS }, body: "" };
+      return {
+        statusCode: 204,
+        headers: buildCorsHeaders(headers["origin"] ?? headers["Origin"]),
+        body: "",
+      };
     }
 
     // Live Balances & Interactive Demo Pay endpoints (Slice 01)
@@ -202,9 +209,13 @@ export class SwitchAdminApp {
         payeeVpa: (p.payeeVpa ?? "shop@psp2").toLowerCase(),
         amountPaise: Number(p.amountPaise ?? 10_000),
       });
+      const rawPin = typeof p.rawPin === "string" ? p.rawPin.trim() : "";
+      if (!rawPin) {
+        return this.json(400, { error: "rawPin is required for /api/pay-demo" });
+      }
       const result = await this.sw.handlePay({
         envelope: env,
-        rawPin: String(p.rawPin ?? "1234"),
+        rawPin,
       });
       return this.json(200, {
         transaction: result.transaction,
@@ -268,6 +279,7 @@ export class SwitchAdminApp {
     // 5. Interface: `GET /transactions/:rrn` & `GET /transactions` (Req 12 & Req 25 Search)
     const txMatch = pathname.match(/^\/transactions\/([^/]+)$/);
     if (method === "GET" && txMatch) {
+      this.requireRole(headers, "operator");
       const key = decodeURIComponent(txMatch[1]);
       const tx =
         this.sw.getTransactionByRrn(key) ?? this.sw.getTransactionById(key);
@@ -349,11 +361,11 @@ export class SwitchAdminApp {
       return this.json(200, result);
     }
 
-    // 8. Interface: `POST /cycles/:id/reconcile` & `GET /cycles/:id/exceptions` (Reconciliation Reqs 21–24)
+    // 8. Interface: `POST /cycles/:id/reconcile`, `POST /reconcile` & `GET /cycles/:id/exceptions` (Reconciliation Reqs 21–24)
     const reconMatch = pathname.match(/^\/cycles\/([^/]+)\/reconcile$/);
-    if (method === "POST" && reconMatch) {
+    if (method === "POST" && (reconMatch || pathname === "/reconcile")) {
       const { actorId } = this.requireRole(headers, "operator");
-      const cycleId = decodeURIComponent(reconMatch[1]);
+      const cycleId = reconMatch ? decodeURIComponent(reconMatch[1]) : this.sw.activeCycleId;
       const customReports = (body as { bankReports?: unknown[] } | undefined)
         ?.bankReports;
       const bankReports =
@@ -542,127 +554,29 @@ export class SwitchAdminApp {
   }
 
   private renderAdminConsoleHtml(): string {
-    return renderFintechShellHtml({
-      title: "Project 1 — UPI Central Switch, Settlement & 3-Way Recon",
-      subtitle: "ISO 8583 6-Hop Pay • Chaos Injection • T+1 Multilateral Netting • Persistent .data/ SQLite",
-      activePort: 3001,
-      bodyHtml: `
-        <div class="auth-bar">
-          <label>X-Admin-Token (see server stdout)<input id="p1Token" type="password" placeholder="Paste X-Admin-Token" /></label>
-          <label>RBAC Role (X-Role)<select id="p1Role"><option value="operator">operator</option><option value="admin">admin</option></select></label>
-          <button onclick="loadBalances()">Refresh Balances</button>
-          <button class="secondary" onclick="loadTxns()">Recent Transactions</button>
-        </div>
-        <div class="grid">
-          <div class="card">
-            <h2>1. Live Bank Core Balances</h2>
-            <pre id="balOut" class="out">Enter X-Admin-Token and click Refresh Balances...</pre>
-          </div>
-          <div class="card">
-            <h2>2. Execute 6-Hop UPI Pay</h2>
-            <div class="row">
-              <label>Payer VPA<input id="payerVpa" value="anita@psp1" /></label>
-              <label>Payee VPA<input id="payeeVpa" value="shop@psp2" /></label>
-            </div>
-            <div class="row">
-              <label>Amount (paise)<input id="amountPaise" type="number" value="50000" /></label>
-              <label>UPI PIN<input id="rawPin" type="password" placeholder="Enter PIN" /></label>
-              <button onclick="sendPay()">Send 0200 PAY</button>
-            </div>
-            <pre id="payOut" class="out">6-hop ISO 8583 trace will appear here...</pre>
-          </div>
-          <div class="card">
-            <h2>3. Bank Chaos Control (Admin RBAC)</h2>
-            <div class="row">
-              <label>Bank<select id="chaosBank"><option>BANKA</option><option>BANKB</option><option>BANKC</option></select></label>
-              <label>Mode<select id="chaosMode"><option value="normal">Normal (Healthy)</option><option value="hang">debitThenHang (CHK Recovery)</option><option value="down">forceDown (0420 Reversal)</option></select></label>
-              <button class="danger" onclick="applyChaos()">Apply Chaos</button>
-            </div>
-            <pre id="chaosOut" class="out">Try with role=operator (403) vs role=admin (200)...</pre>
-          </div>
-          <div class="card">
-            <h2>4. T+1 Settlement & 3-Way Reconciliation</h2>
-            <div class="row">
-              <button onclick="runSettlement()">Run Settlement Cycle</button>
-              <button class="secondary" onclick="runRecon()">Run 3-Way Recon</button>
-            </div>
-            <pre id="reconOut" class="out">Settlement net positions & 3-way recon results...</pre>
-          </div>
-        </div>`,
-      scriptJs: `
-        function p1Headers() {
-          return {
-            "content-type": "application/json",
-            "x-admin-token": document.getElementById("p1Token").value.trim(),
-            "x-role": document.getElementById("p1Role").value
-          };
-        }
-        async function loadBalances() {
-          const r = await fetch("/api/balances", { headers: p1Headers() });
-          show("balOut", { status: r.status, body: await r.json() });
-        }
-        async function loadTxns() {
-          const r = await fetch("/transactions", { headers: p1Headers() });
-          show("balOut", { status: r.status, body: await r.json() });
-        }
-        async function sendPay() {
-          const r = await fetch("/api/pay-demo", {
-            method: "POST",
-            headers: p1Headers(),
-            body: JSON.stringify({
-              payerVpa: document.getElementById("payerVpa").value,
-              payeeVpa: document.getElementById("payeeVpa").value,
-              amountPaise: Number(document.getElementById("amountPaise").value),
-              rawPin: document.getElementById("rawPin").value
-            })
-          });
-          show("payOut", { status: r.status, body: await r.json() });
-          if (r.ok) loadBalances();
-        }
-        async function applyChaos() {
-          const bank = document.getElementById("chaosBank").value;
-          const mode = document.getElementById("chaosMode").value;
-          const payload = mode === "hang" ? { debitThenHang: true, forceDown: false }
-                        : mode === "down" ? { debitThenHang: false, forceDown: true }
-                        : { debitThenHang: false, forceDown: false };
-          const r = await fetch("/participants/" + bank + "/chaos", {
-            method: "PUT",
-            headers: p1Headers(),
-            body: JSON.stringify(payload)
-          });
-          show("chaosOut", { status: r.status, body: await r.json() });
-        }
-        async function runSettlement() {
-          const r = await fetch("/cycles/${this.sw.activeCycleId}/run", { method: "POST", headers: p1Headers(), body: "{}" });
-          show("reconOut", { status: r.status, body: await r.json() });
-        }
-        async function runRecon() {
-          const r = await fetch("/cycles/${this.sw.activeCycleId}/reconcile", { method: "POST", headers: p1Headers(), body: "{}" });
-          show("reconOut", { status: r.status, body: await r.json() });
-        }
-      `,
-    });
+    return renderSwitchAdminHtml(this.sw.activeCycleId);
   }
 
   public createHttpServer(): http.Server {
     return http.createServer(async (req, res) => {
-      const chunks: Buffer[] = [];
-      for await (const chunk of req) {
-        chunks.push(Buffer.from(chunk));
-      }
-      const rawBody = Buffer.concat(chunks).toString("utf8");
-      let parsedBody: unknown = undefined;
-      if (rawBody) {
-        try {
-          parsedBody = JSON.parse(rawBody);
-        } catch {
-          parsedBody = rawBody;
-        }
-      }
-
       const headers: Record<string, string | undefined> = {};
       for (const [k, v] of Object.entries(req.headers)) {
         headers[k] = Array.isArray(v) ? v[0] : v;
+      }
+
+      let parsedBody: unknown = undefined;
+      try {
+        const { json } = await readRawAndJsonBody(req);
+        parsedBody = json;
+      } catch (err: unknown) {
+        const statusCode = (err as { statusCode?: number })?.statusCode ?? 400;
+        const message = err instanceof Error ? err.message : String(err);
+        res.writeHead(statusCode, {
+          ...buildCorsHeaders(headers["origin"] ?? headers["Origin"]),
+          "content-type": "application/json",
+        });
+        res.end(JSON.stringify({ error: message }, null, 2));
+        return;
       }
 
       const apiRes = await this.dispatch({

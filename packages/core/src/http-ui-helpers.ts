@@ -6,19 +6,96 @@ import fs from "node:fs";
  * Zero external runtime dependencies — Node 24 built-ins + Browser SubtleCrypto.
  */
 
-export const CORS_HEADERS: Record<string, string> = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "access-control-allow-headers":
-    "Content-Type, X-Role, X-Actor-Id, X-Admin-Token, X-Request-Id, X-Key-Id, X-Timestamp, X-Signature, X-Device-Id, X-Device-Timestamp, X-Device-Nonce, X-Device-Signature, X-Ops-Token, X-Merchant-Token",
-};
+function getConfiguredPorts(): {
+  p1: number;
+  p2: number;
+  p3: number;
+  p4: number;
+} {
+  return {
+    p1: Number(process.env.SWITCH_PORT ?? 3001),
+    p2: Number(process.env.GATEWAY_PORT ?? 3002),
+    p3: Number(process.env.CONSUMER_PORT ?? 3003),
+    p4: Number(process.env.MANDATES_PORT ?? 3004),
+  };
+}
+
+export function getAllowedCorsOrigin(requestOrigin?: string): string {
+  const { p1, p2, p3, p4 } = getConfiguredPorts();
+  const allowed = new Set<string>([
+    `http://127.0.0.1:${p1}`,
+    `http://127.0.0.1:${p2}`,
+    `http://127.0.0.1:${p3}`,
+    `http://127.0.0.1:${p4}`,
+    `http://localhost:${p1}`,
+    `http://localhost:${p2}`,
+    `http://localhost:${p3}`,
+    `http://localhost:${p4}`,
+  ]);
+  if (requestOrigin && allowed.has(requestOrigin)) {
+    return requestOrigin;
+  }
+  return `http://127.0.0.1:${p1}`;
+}
+
+export function buildCorsHeaders(requestOrigin?: string): Record<string, string> {
+  return {
+    "access-control-allow-origin": getAllowedCorsOrigin(requestOrigin),
+    "vary": "Origin",
+    "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "access-control-allow-headers":
+      "Content-Type, X-Role, X-Actor-Id, X-Admin-Token, X-Request-Id, X-Key-Id, X-Timestamp, X-Signature, X-Device-Id, X-Device-Timestamp, X-Device-Nonce, X-Device-Signature, X-Ops-Token, X-Merchant-Token, X-Onboarding-Token",
+  };
+}
+
+export const CORS_HEADERS: Record<string, string> = buildCorsHeaders();
+
+export function escapeHtml(raw: string): string {
+  return raw
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+export function mapErrorToHttpStatus(err: unknown): number {
+  const explicit = (err as { statusCode?: number })?.statusCode;
+  if (typeof explicit === "number" && explicit >= 400 && explicit <= 599) {
+    return explicit;
+  }
+  const name = err instanceof Error ? err.name : "";
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  if (name === "NetworkDropSimulatedError" || msg.includes("airplane mode") || msg.includes("network drop")) {
+    return 503;
+  }
+  if (msg.includes("not found")) return 404;
+  if (msg.includes("unauthorized") || msg.includes("invalid pin") || msg.includes("invalid otp")) return 401;
+  if (msg.includes("forbidden") || msg.includes("cooling") || msg.includes("frozen") || msg.includes("halted")) return 403;
+  if (msg.includes("unique constraint") || msg.includes("already exists") || msg.includes("conflict")) return 409;
+  if (
+    msg.includes("must be") ||
+    msg.includes("invalid") ||
+    msg.includes("required") ||
+    msg.includes("positive integer") ||
+    msg.includes("cannot exceed") ||
+    msg.includes("luhn") ||
+    msg.includes("expired")
+  ) {
+    return 400;
+  }
+  return 500;
+}
 
 export function ensureDataDir(dirPath: string): void {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
-export function applyCorsHeaders(res: http.ServerResponse): void {
-  for (const [k, v] of Object.entries(CORS_HEADERS)) {
+export function applyCorsHeaders(
+  res: http.ServerResponse,
+  requestOrigin?: string
+): void {
+  for (const [k, v] of Object.entries(buildCorsHeaders(requestOrigin))) {
     res.setHeader(k, v);
   }
 }
@@ -26,9 +103,10 @@ export function applyCorsHeaders(res: http.ServerResponse): void {
 export function writeJsonResponse(
   res: http.ServerResponse,
   statusCode: number,
-  body: unknown
+  body: unknown,
+  requestOrigin?: string
 ): void {
-  applyCorsHeaders(res);
+  applyCorsHeaders(res, requestOrigin);
   res.writeHead(statusCode, { "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(body, null, 2));
 }
@@ -36,9 +114,10 @@ export function writeJsonResponse(
 export function writeHtmlResponse(
   res: http.ServerResponse,
   statusCode: number,
-  html: string
+  html: string,
+  requestOrigin?: string
 ): void {
-  applyCorsHeaders(res);
+  applyCorsHeaders(res, requestOrigin);
   res.writeHead(statusCode, { "content-type": "text/html; charset=utf-8" });
   res.end(html);
 }
@@ -62,7 +141,11 @@ export async function readRawAndJsonBody(
     return { rawBody: "", json: {} };
   }
   try {
-    return { rawBody, json: JSON.parse(rawBody) as Record<string, unknown> };
+    const parsed = JSON.parse(rawBody);
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("Expected JSON object");
+    }
+    return { rawBody, json: parsed as Record<string, unknown> };
   } catch {
     throw Object.assign(new Error("Invalid JSON request body"), { statusCode: 400 });
   }
@@ -75,26 +158,30 @@ export function renderFintechShellHtml(params: {
   bodyHtml: string;
   scriptJs: string;
 }): string {
-  const navItems: Array<{ port: 3001 | 3002 | 3003 | 3004; label: string }> = [
-    { port: 3001, label: "P1 Switch (:3001)" },
-    { port: 3002, label: "P2 Gateway (:3002)" },
-    { port: 3003, label: "P3 Consumer & Risk (:3003)" },
-    { port: 3004, label: "P4 Mandates (:3004)" },
+  const { p1, p2, p3, p4 } = getConfiguredPorts();
+  const navItems: Array<{ slot: 3001 | 3002 | 3003 | 3004; port: number; label: string }> = [
+    { slot: 3001, port: p1, label: `P1 Switch (:${p1})` },
+    { slot: 3002, port: p2, label: `P2 Gateway (:${p2})` },
+    { slot: 3003, port: p3, label: `P3 Consumer & Risk (:${p3})` },
+    { slot: 3004, port: p4, label: `P4 Mandates (:${p4})` },
   ];
 
   const navHtml = navItems
     .map((item) => {
-      const activeClass = item.port === params.activePort ? "nav-link active" : "nav-link";
-      return `<a class="${activeClass}" href="http://127.0.0.1:${item.port}/">${item.label}</a>`;
+      const activeClass = item.slot === params.activePort ? "nav-link active" : "nav-link";
+      return `<a class="${activeClass}" href="http://127.0.0.1:${item.port}/">${escapeHtml(item.label)}</a>`;
     })
     .join("");
+
+  const safeTitle = escapeHtml(params.title);
+  const safeSubtitle = escapeHtml(params.subtitle);
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${params.title}</title>
+  <title>${safeTitle}</title>
   <style>
     :root {
       --bg: #0b1020;
@@ -208,8 +295,8 @@ export function renderFintechShellHtml(params: {
 <body>
   <header>
     <div>
-      <h1>${params.title}</h1>
-      <div class="sub">${params.subtitle}</div>
+      <h1>${safeTitle}</h1>
+      <div class="sub">${safeSubtitle}</div>
     </div>
     <nav>${navHtml}</nav>
   </header>

@@ -1,27 +1,31 @@
 import http from "node:http";
 import path from "node:path";
 import {
-  CORS_HEADERS,
+  buildCorsHeaders,
   ensureDataDir,
+  mapErrorToHttpStatus,
   readRawAndJsonBody,
+  timingSafeTokenEqual,
   writeJsonResponse,
   writeHtmlResponse,
-  renderFintechShellHtml,
   InjectableFakeClock,
 } from "@fintech/core";
-import { createSeededGatewayTopology } from "@fintech/project2-gateway";
+import { CentralSwitch, createSeededTopology } from "@fintech/project1-switch";
+import { createPersistentGatewayContext } from "@fintech/project2-gateway";
 import { MandateService, type MandateRail } from "./mandate-service.ts";
 import { SubscriptionService } from "./subscription-service.ts";
 import { RecurringCycleExecutor } from "./cycle-executor.ts";
 import { EnachBankBatchSimulator, EnachPresentmentEngine } from "./enach-batch.ts";
 import { DunningEngine } from "./dunning-engine.ts";
 import { InvoiceAndMrrService } from "./invoices-and-analytics.ts";
+import { renderMandatesUiHtml } from "./mandates-ui.ts";
 
 /**
  * Slice 06 — Project 4 Live HTTP Server & Interactive Fake Clock UI (:3004)
  *
- * - Persistent `.data/p4-mandates.sqlite` including persisted `fake_clock_state`
- * - Strict manual `X-Merchant-Token` auth (`401` on missing/wrong) + customer PIN/OTP on mandate auth
+ * - Persistent `.data/p4-mandates.sqlite`, `.data/p4-gateway/`, `.data/p4-banks/`, `.data/p4-switch.sqlite`
+ * - Persisted `fake_clock_state` + deterministic persisted `merchantId` across restarts
+ * - Constant-time `X-Merchant-Token` auth + customer PIN/OTP on mandate authorization
  */
 
 export interface MandatesHttpServerContext {
@@ -44,14 +48,27 @@ export function createPersistentMandatesContext(options?: {
   if (options?.dataDir) {
     ensureDataDir(options.dataDir);
   }
-  const dbPath = options?.dataDir
-    ? path.join(options.dataDir, "p4-mandates.sqlite")
-    : ":memory:";
+  const dbPath = options?.dataDir ? path.join(options.dataDir, "p4-mandates.sqlite") : ":memory:";
+  const p4GwDir = options?.dataDir ? path.join(options.dataDir, "p4-gateway") : undefined;
+  const p4BanksDir = options?.dataDir ? path.join(options.dataDir, "p4-banks") : undefined;
+  const p4SwitchPath = options?.dataDir ? path.join(options.dataDir, "p4-switch.sqlite") : ":memory:";
 
-  const gwTopo = createSeededGatewayTopology();
+  const p1 = createSeededTopology(p4BanksDir ? { dataDir: p4BanksDir } : undefined);
+  const sw = new CentralSwitch({
+    dbPath: p4SwitchPath,
+    bankTimeoutMs: 500,
+    maxCreditRetries: 2,
+    activeCycleId: "CYC-2026-11-26",
+  });
+  sw.registerBank(p1.banks.BANKA);
+  sw.registerBank(p1.banks.BANKB);
+  sw.registerBank(p1.banks.BANKC);
+  sw.registerPsp(p1.psps.PSP1);
+  sw.registerPsp(p1.psps.PSP2);
+
+  const gwCtx = createPersistentGatewayContext(p4GwDir ? { dataDir: p4GwDir } : undefined);
   const mandates = new MandateService(dbPath);
 
-  // Persist Fake Clock state in SQLite so time progression survives restarts
   mandates.db.exec(`
     CREATE TABLE IF NOT EXISTS fake_clock_state (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -62,7 +79,7 @@ export function createPersistentMandatesContext(options?: {
     .prepare(`SELECT current_iso FROM fake_clock_state WHERE id = 1`)
     .get() as { current_iso: string } | undefined;
 
-  const initialIso = savedClock?.current_iso ?? "2026-01-31T04:30:00.000Z"; // Jan 31, 10:00 AM IST
+  const initialIso = savedClock?.current_iso ?? "2026-01-31T04:30:00.000Z";
   const clock = new InjectableFakeClock(initialIso);
   const persistClock = () => {
     mandates.db
@@ -78,15 +95,15 @@ export function createPersistentMandatesContext(options?: {
   const executor = new RecurringCycleExecutor({
     mandates,
     subs,
-    p1Switch: gwTopo.p1.centralSwitch,
-    p1Psp: gwTopo.p1.psps.PSP1,
+    p1Switch: sw,
+    p1Psp: p1.psps.PSP1,
     merchantVpa: "shop@psp2",
     clock,
     dbPath,
   });
-  const enach = new EnachPresentmentEngine({ gateway: gwTopo.gateway, dbPath });
-  const dunning = new DunningEngine({ subs, gateway: gwTopo.gateway, clock, dbPath });
-  const invoices = new InvoiceAndMrrService({ webhooks: gwTopo.gateway.webhooks, dbPath });
+  const enach = new EnachPresentmentEngine({ gateway: gwCtx.gateway, dbPath });
+  const dunning = new DunningEngine({ subs, gateway: gwCtx.gateway, clock, dbPath });
+  const invoices = new InvoiceAndMrrService({ webhooks: gwCtx.gateway.webhooks, dbPath });
 
   return {
     clock,
@@ -96,7 +113,7 @@ export function createPersistentMandatesContext(options?: {
     enach,
     dunning,
     invoices,
-    merchantId: gwTopo.merchant.id,
+    merchantId: gwCtx.seededMerchantId,
     merchantToken:
       options?.merchantToken ?? process.env.P4_MERCHANT_TOKEN ?? "p4_dev_merchant_token_2026",
     persistClock,
@@ -112,7 +129,7 @@ export class MandatesHttpServer {
 
   private requireMerchantToken(req: http.IncomingMessage): void {
     const token = String(req.headers["x-merchant-token"] ?? "").trim();
-    if (!token || token !== this.ctx.merchantToken) {
+    if (!timingSafeTokenEqual(token, this.ctx.merchantToken)) {
       throw Object.assign(
         new Error("Unauthorized (HTTP 401): Missing or invalid X-Merchant-Token"),
         { statusCode: 401 }
@@ -125,16 +142,17 @@ export class MandatesHttpServer {
       const method = (req.method ?? "GET").toUpperCase();
       const url = new URL(req.url ?? "/", "http://127.0.0.1");
       const pathname = url.pathname;
+      const origin = req.headers.origin;
 
       if (method === "OPTIONS") {
-        res.writeHead(204, CORS_HEADERS);
+        res.writeHead(204, buildCorsHeaders(origin));
         res.end();
         return;
       }
 
       try {
         if (method === "GET" && pathname === "/") {
-          writeHtmlResponse(res, 200, this.renderUiHtml());
+          writeHtmlResponse(res, 200, renderMandatesUiHtml(), origin);
           return;
         }
 
@@ -144,7 +162,7 @@ export class MandatesHttpServer {
             status: "UP",
             fakeClockUtc: this.ctx.clock.now().toISOString(),
             rails: ["UPI_AUTOPAY", "E_NACH"],
-          });
+          }, origin);
           return;
         }
 
@@ -154,22 +172,42 @@ export class MandatesHttpServer {
         if (method === "GET" && pathname === "/api/clock") {
           const now = this.ctx.clock.now();
           const ist = new Date(now.getTime() + 330 * 60 * 1000).toISOString().replace("Z", "+05:30");
-          writeJsonResponse(res, 200, { utc: now.toISOString(), ist });
+          writeJsonResponse(res, 200, { utc: now.toISOString(), ist }, origin);
           return;
         }
 
         if (method === "POST" && pathname === "/api/clock/advance") {
-          if (json.setIso) {
-            this.ctx.clock.setTime(String(json.setIso));
-          } else if (json.hours) {
-            this.ctx.clock.advanceByHours(Number(json.hours));
-          } else if (json.days) {
-            this.ctx.clock.advanceByDays(Number(json.days));
+          if (json.setIso !== undefined) {
+            const isoStr = String(json.setIso);
+            if (Number.isNaN(Date.parse(isoStr))) {
+              throw Object.assign(new Error("Invalid setIso timestamp"), { statusCode: 400 });
+            }
+            this.ctx.clock.setTime(isoStr);
+          } else if (json.hours !== undefined) {
+            const h = Number(json.hours);
+            if (!Number.isFinite(h)) {
+              throw Object.assign(new Error("hours must be a finite number"), { statusCode: 400 });
+            }
+            this.ctx.clock.advanceByHours(h);
+          } else if (json.days !== undefined) {
+            const d = Number(json.days);
+            if (!Number.isFinite(d)) {
+              throw Object.assign(new Error("days must be a finite number"), { statusCode: 400 });
+            }
+            this.ctx.clock.advanceByDays(d);
           }
           this.ctx.persistClock();
           const now = this.ctx.clock.now();
           const ist = new Date(now.getTime() + 330 * 60 * 1000).toISOString().replace("Z", "+05:30");
-          writeJsonResponse(res, 200, { utc: now.toISOString(), ist });
+          writeJsonResponse(res, 200, { utc: now.toISOString(), ist }, origin);
+          return;
+        }
+
+        if (method === "GET" && pathname === "/api/mandates") {
+          const rows = this.ctx.mandates.db
+            .prepare(`SELECT * FROM mandates WHERE merchant_id = ? ORDER BY created_at DESC LIMIT 50`)
+            .all(this.ctx.merchantId);
+          writeJsonResponse(res, 200, { mandates: rows }, origin);
           return;
         }
 
@@ -186,7 +224,7 @@ export class MandatesHttpServer {
             validUntilIso: String(json.validUntilIso ?? "2029-12-31T00:00:00.000Z"),
             now: this.ctx.clock.now(),
           });
-          writeJsonResponse(res, 201, m);
+          writeJsonResponse(res, 201, m, origin);
           return;
         }
 
@@ -197,7 +235,7 @@ export class MandatesHttpServer {
             authCredential: String(json.authCredential ?? ""),
             now: this.ctx.clock.now(),
           });
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
           return;
         }
 
@@ -209,7 +247,7 @@ export class MandatesHttpServer {
             newMonthlyAggregateCapPaise: Number(json.newMonthlyAggregateCapPaise ?? 300_000),
             now: this.ctx.clock.now(),
           });
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
           return;
         }
 
@@ -220,7 +258,7 @@ export class MandatesHttpServer {
             authCredential: String(json.authCredential ?? ""),
             now: this.ctx.clock.now(),
           });
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
           return;
         }
 
@@ -231,7 +269,7 @@ export class MandatesHttpServer {
             String(json.reason ?? "Customer revoked via UI"),
             this.ctx.clock.now()
           );
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
           return;
         }
 
@@ -242,7 +280,15 @@ export class MandatesHttpServer {
             interval: (json.interval as "MONTHLY" | "YEARLY") ?? "MONTHLY",
             amountPaise: Number(json.amountPaise ?? 49_900),
           });
-          writeJsonResponse(res, 201, p);
+          writeJsonResponse(res, 201, p, origin);
+          return;
+        }
+
+        if (method === "GET" && pathname === "/api/subscriptions") {
+          const rows = this.ctx.subs.db
+            .prepare(`SELECT * FROM subscriptions WHERE merchant_id = ? ORDER BY created_at DESC LIMIT 50`)
+            .all(this.ctx.merchantId);
+          writeJsonResponse(res, 200, { subscriptions: rows }, origin);
           return;
         }
 
@@ -256,15 +302,34 @@ export class MandatesHttpServer {
             startYear: json.startYear ? Number(json.startYear) : 2026,
             startMonth1Based: json.startMonth1Based ? Number(json.startMonth1Based) : 1,
           });
-          const active = this.ctx.subs.activateSubscription(sub.id);
-          writeJsonResponse(res, 201, active);
+          const out = json.autoActivate === false ? sub : this.ctx.subs.activateSubscription(sub.id);
+          writeJsonResponse(res, 201, out, origin);
+          return;
+        }
+
+        const sAct = pathname.match(/^\/api\/subscriptions\/([^/]+)\/activate$/);
+        if (method === "POST" && sAct) {
+          const out = this.ctx.subs.activateSubscription(decodeURIComponent(sAct[1]));
+          writeJsonResponse(res, 200, out, origin);
+          return;
+        }
+
+        const sChange = pathname.match(/^\/api\/subscriptions\/([^/]+)\/change-plan$/);
+        if (method === "POST" && sChange) {
+          const out = this.ctx.subs.changeSubscriptionPlan({
+            subscriptionId: decodeURIComponent(sChange[1]),
+            newPlanId: String(json.newPlanId ?? ""),
+            remainingDays: Number(json.remainingDays ?? 15),
+            totalCycleDays: Number(json.totalCycleDays ?? 30),
+          });
+          writeJsonResponse(res, 200, out, origin);
           return;
         }
 
         const sAdv = pathname.match(/^\/api\/subscriptions\/([^/]+)\/advance-anchor$/);
         if (method === "POST" && sAdv) {
           const out = this.ctx.subs.advanceToNextBillingCycle(decodeURIComponent(sAdv[1]));
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
           return;
         }
 
@@ -273,7 +338,7 @@ export class MandatesHttpServer {
             String(json.subscriptionId ?? ""),
             Number(json.cycleNumber ?? 1)
           );
-          writeJsonResponse(res, 201, notice);
+          writeJsonResponse(res, 201, notice, origin);
           return;
         }
 
@@ -282,7 +347,7 @@ export class MandatesHttpServer {
             subscriptionId: String(json.subscriptionId ?? ""),
             cycleNumber: Number(json.cycleNumber ?? 1),
           });
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
           return;
         }
 
@@ -301,7 +366,7 @@ export class MandatesHttpServer {
           );
           const respCsv = simA.processPresentmentAndBuildResponseCsv(batches[0].batchId, batches[0].presentmentCsv, this.ctx.clock.now());
           const ingested = this.ctx.enach.ingestResponseCsv(batches[0].batchId, respCsv, this.ctx.clock.now());
-          writeJsonResponse(res, 200, ingested);
+          writeJsonResponse(res, 200, ingested, origin);
           return;
         }
 
@@ -312,7 +377,14 @@ export class MandatesHttpServer {
             amountPaise: Number(json.amountPaise ?? 49_900),
             failureCode: String(json.failureCode ?? "51_INSUFFICIENT_FUNDS"),
           });
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
+          return;
+        }
+
+        if (method === "POST" && pathname === "/api/dunning/process-due") {
+          const simulateSuccess = Boolean(json.simulateSuccess);
+          const summary = await this.ctx.dunning.processDueRetries(async () => simulateSuccess);
+          writeJsonResponse(res, 200, summary, origin);
           return;
         }
 
@@ -323,7 +395,29 @@ export class MandatesHttpServer {
             cardNumber: String(json.cardNumber ?? "4111111111114242"),
             expiry: String(json.expiry ?? "12/29"),
           });
-          writeJsonResponse(res, 200, out);
+          writeJsonResponse(res, 200, out, origin);
+          return;
+        }
+
+        if (method === "POST" && pathname === "/api/invoices") {
+          const inv = this.ctx.invoices.createDraftInvoice({
+            merchantId: this.ctx.merchantId,
+            customerId: String(json.customerId ?? "cust_anita"),
+            subscriptionId: String(json.subscriptionId ?? `sub_inv_${Date.now()}`),
+            cycleNumber: Number(json.cycleNumber ?? 1),
+            umrn: json.umrn ? String(json.umrn) : "UMRNBANKA000001",
+            recurringAmountPaise: Number(json.amountPaise ?? 49_900),
+            now: this.ctx.clock.now(),
+          });
+          writeJsonResponse(res, 201, inv, origin);
+          return;
+        }
+
+        const invPrint = pathname.match(/^\/api\/invoices\/([^/]+)\/printable$/);
+        if (method === "GET" && invPrint) {
+          const id = decodeURIComponent(invPrint[1]);
+          const text = this.ctx.invoices.renderPrintableInvoice(id);
+          writeJsonResponse(res, 200, { invoiceId: id, printable: text }, origin);
           return;
         }
 
@@ -356,7 +450,7 @@ export class MandatesHttpServer {
             invoice: this.ctx.invoices.getInvoice(inv.id),
             printable: this.ctx.invoices.renderPrintableInvoice(inv.id),
             mrrParity: this.ctx.invoices.verifyMrrMatchesPaidInvoices(this.ctx.merchantId),
-          });
+          }, origin);
           return;
         }
 
@@ -364,172 +458,18 @@ export class MandatesHttpServer {
           writeJsonResponse(
             res,
             200,
-            this.ctx.invoices.verifyMrrMatchesPaidInvoices(this.ctx.merchantId)
+            this.ctx.invoices.verifyMrrMatchesPaidInvoices(this.ctx.merchantId),
+            origin
           );
           return;
         }
 
-        writeJsonResponse(res, 404, { error: "Not Found" });
+        writeJsonResponse(res, 404, { error: "Not Found" }, origin);
       } catch (err: unknown) {
-        const statusCode = (err as { statusCode?: number })?.statusCode ?? 500;
+        const statusCode = mapErrorToHttpStatus(err);
         const message = err instanceof Error ? err.message : String(err);
-        writeJsonResponse(res, statusCode, { error: message });
+        writeJsonResponse(res, statusCode, { error: message }, origin);
       }
-    });
-  }
-
-  private renderUiHtml(): string {
-    return renderFintechShellHtml({
-      title: "Project 4 — RBI Mandates (AutoPay & e-NACH), Subscriptions & Fake Clock",
-      subtitle: "Persisted Injectable Fake Clock • UMRN & Cap Re-Auth • 24h Pre-Debit Gate • Dunning & Pay-Now",
-      activePort: 3004,
-      bodyHtml: `
-        <div class="auth-bar">
-          <label>X-Merchant-Token (see server stdout)<input id="p4Token" type="password" placeholder="Paste X-Merchant-Token" /></label>
-          <button onclick="advanceClock({ hours: 10 })">+10h</button>
-          <button onclick="advanceClock({ hours: 24 })">+24h (Pre-Debit)</button>
-          <button class="secondary" onclick="advanceClock({ days: 7 })">+7d</button>
-          <button class="secondary" onclick="advanceClock({ setIso: '2026-01-31T04:30:00.000Z' })">Reset Jan 31 10:00 IST</button>
-          <span id="clockBadge" class="badge ok">Clock: click Refresh/Advance</span>
-        </div>
-        <div class="grid">
-          <div class="card">
-            <h2>1. RBI Mandate UMRN & Cap Re-Auth</h2>
-            <div class="row">
-              <label>Rail<select id="mRail"><option value="UPI_AUTOPAY">UPI_AUTOPAY (PIN 1234)</option><option value="E_NACH">E_NACH (OTP 654321)</option></select></label>
-              <label>Auth PIN / OTP<input id="mCred" type="password" placeholder="1234 or 654321" /></label>
-            </div>
-            <div class="row">
-              <button onclick="createAndAuthMandate()">Create & Authorize Mandate</button>
-              <button class="secondary" onclick="increaseCap()">Request Cap Increase</button>
-              <button class="danger" onclick="revokeMandate()">Revoke Mandate</button>
-            </div>
-            <pre id="mOut" class="out">Enter X-Merchant-Token above, then authorize a mandate to mint UMRN...</pre>
-          </div>
-          <div class="card">
-            <h2>2. Subscription (Jan 31 -> Feb 28 -> Mar 31) & 24h Pre-Debit Gate</h2>
-            <div class="row">
-              <button onclick="createSub()">Create & Activate Sub</button>
-              <button class="secondary" onclick="advanceAnchor()">Preview Next Anchor Month</button>
-            </div>
-            <div class="row">
-              <button onclick="sendPreDebit()">1. Send 24h Pre-Debit Notice</button>
-              <button class="secondary" onclick="execCycle()">2. Execute Cycle (Watch 403 -> +24h -> 200)</button>
-            </div>
-            <pre id="subOut" class="out">Try Execute Cycle before +24h to see the RBI 403 Pre-Debit Gate...</pre>
-          </div>
-          <div class="card">
-            <h2>3. Dunning (Day 1/3/7) & Pay-Now Recovery</h2>
-            <div class="row">
-              <button class="danger" onclick="triggerSoftFail()">Simulate 51_INSUFFICIENT_FUNDS</button>
-              <button onclick="payNowRecover()">Pay-Now Recovery (Card)</button>
-            </div>
-            <pre id="dunOut" class="out">Soft failure creates PAST_DUE + Day 1/3/7 retries + Pay-Now Order...</pre>
-          </div>
-          <div class="card">
-            <h2>4. e-NACH Missing-Record Batch & Printable Invoice / MRR</h2>
-            <div class="row">
-              <button onclick="runEnachSample()">Run e-NACH Batch (1 Dropped Row)</button>
-              <button class="secondary" onclick="createPaidInvoice()">Issue & Pay Tax Invoice</button>
-            </div>
-            <pre id="invOut" class="out">Printable Tax Invoice + MRR-to-Paid-Invoice invariant...</pre>
-          </div>
-        </div>`,
-      scriptJs: `
-        let p4State = { mandateId: "", umrn: "", subId: "", dunningCaseId: "" };
-        function p4Headers() {
-          return { "content-type": "application/json", "x-merchant-token": document.getElementById("p4Token").value.trim() };
-        }
-        async function advanceClock(body) {
-          const r = await fetch("/api/clock/advance", { method: "POST", headers: p4Headers(), body: JSON.stringify(body) });
-          const data = await r.json();
-          if (r.ok) document.getElementById("clockBadge").textContent = "IST: " + data.ist;
-          else show("mOut", { status: r.status, body: data });
-        }
-        async function createAndAuthMandate() {
-          const rail = document.getElementById("mRail").value;
-          const m1 = await fetch("/api/mandates", { method: "POST", headers: p4Headers(), body: JSON.stringify({ rail }) });
-          const mData = await m1.json();
-          if (!m1.ok) return show("mOut", { status: m1.status, body: mData });
-          p4State.mandateId = mData.id;
-          const m2 = await fetch("/api/mandates/" + mData.id + "/authorize", {
-            method: "POST",
-            headers: p4Headers(),
-            body: JSON.stringify({ authCredential: document.getElementById("mCred").value })
-          });
-          const aData = await m2.json();
-          if (aData.umrn) p4State.umrn = aData.umrn;
-          show("mOut", { status: m2.status, body: aData });
-        }
-        async function increaseCap() {
-          const r = await fetch("/api/mandates/" + p4State.mandateId + "/cap", {
-            method: "POST",
-            headers: p4Headers(),
-            body: JSON.stringify({ newMaxAmountPaise: 200000, newMonthlyAggregateCapPaise: 400000 })
-          });
-          show("mOut", { status: r.status, body: await r.json() });
-        }
-        async function revokeMandate() {
-          const r = await fetch("/api/mandates/" + p4State.mandateId + "/revoke", { method: "POST", headers: p4Headers(), body: "{}" });
-          show("mOut", { status: r.status, body: await r.json() });
-        }
-        async function createSub() {
-          const pr = await fetch("/api/plans", { method: "POST", headers: p4Headers(), body: JSON.stringify({ name: "Pro Monthly", amountPaise: 49900 }) });
-          const plan = await pr.json();
-          if (!pr.ok) return show("subOut", { status: pr.status, body: plan });
-          const sr = await fetch("/api/subscriptions", {
-            method: "POST",
-            headers: p4Headers(),
-            body: JSON.stringify({ planId: plan.id, mandateId: p4State.mandateId, anchorDay: 31, startYear: 2026, startMonth1Based: 1 })
-          });
-          const sub = await sr.json();
-          if (sub.id) p4State.subId = sub.id;
-          show("subOut", { status: sr.status, body: sub });
-        }
-        async function advanceAnchor() {
-          const r = await fetch("/api/subscriptions/" + p4State.subId + "/advance-anchor", { method: "POST", headers: p4Headers(), body: "{}" });
-          show("subOut", { status: r.status, body: await r.json() });
-        }
-        async function sendPreDebit() {
-          const r = await fetch("/api/cycles/pre-debit", { method: "POST", headers: p4Headers(), body: JSON.stringify({ subscriptionId: p4State.subId, cycleNumber: 1 }) });
-          show("subOut", { status: r.status, body: await r.json() });
-        }
-        async function execCycle() {
-          const r = await fetch("/api/cycles/execute", { method: "POST", headers: p4Headers(), body: JSON.stringify({ subscriptionId: p4State.subId, cycleNumber: 1 }) });
-          show("subOut", { status: r.status, body: await r.json() });
-        }
-        async function triggerSoftFail() {
-          const r = await fetch("/api/dunning/fail", {
-            method: "POST",
-            headers: p4Headers(),
-            body: JSON.stringify({ subscriptionId: p4State.subId, executionKey: p4State.subId + ":cycle:2", amountPaise: 49900, failureCode: "51_INSUFFICIENT_FUNDS" })
-          });
-          const data = await r.json();
-          if (data.dunningCase?.id) p4State.dunningCaseId = data.dunningCase.id;
-          show("dunOut", { status: r.status, body: data });
-        }
-        async function payNowRecover() {
-          const r = await fetch("/api/dunning/" + p4State.dunningCaseId + "/pay-now", {
-            method: "POST",
-            headers: p4Headers(),
-            body: JSON.stringify({ cardNumber: "4111111111114242", expiry: "12/29" })
-          });
-          show("dunOut", { status: r.status, body: await r.json() });
-        }
-        async function runEnachSample() {
-          const r = await fetch("/api/enach/run-sample", { method: "POST", headers: p4Headers(), body: "{}" });
-          show("invOut", { status: r.status, body: await r.json() });
-        }
-        async function createPaidInvoice() {
-          const r = await fetch("/api/invoices/demo-paid", {
-            method: "POST",
-            headers: p4Headers(),
-            body: JSON.stringify({ subscriptionId: p4State.subId || "sub_demo", umrn: p4State.umrn || "UMRNBANKA000001", amountPaise: 49900 })
-          });
-          const data = await r.json();
-          show("invOut", r.ok ? data.printable + "\\n\\nMRR Parity: " + JSON.stringify(data.mrrParity) : { status: r.status, body: data });
-        }
-      `,
     });
   }
 }
