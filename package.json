@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "start": "node scripts/orchestrate.ts",
+    "start:cloud": "CLOUD_SINGLE_PORT=true node scripts/cloud-server.ts",
     "dev": "node --watch scripts/orchestrate.ts",
     "start:p1": "node scripts/orchestrate.ts --only=p1",
     "start:p2": "node scripts/orchestrate.ts --only=p2",
