@@ -46,7 +46,7 @@ describe("Slices 02 & 03 — Project 2 Gateway Live HTTP Server, HMAC Auth, Isol
       const htmlRes = await fetch(`${base}/`);
       assert.equal(htmlRes.status, 200);
       const html = await htmlRes.text();
-      assert.ok(html.includes("SubtleCrypto"));
+      assert.ok(html.includes("PCI Token Vault"));
       assert.ok(!html.includes('upiRawPin: "1234"'));
 
       const unauth = await fetch(`${base}/api/ledger/parity`);

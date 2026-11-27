@@ -6,7 +6,7 @@ import { renderFintechShellHtml } from "@fintech/core";
 export function renderGatewayUiHtml(): string {
   return renderFintechShellHtml({
     title: "Merchant Payment Gateway",
-    subtitle: "PCI Token Vault • Smart Acquirer Failover • SubtleCrypto HMAC & Webhooks",
+    subtitle: "PCI Token Vault • Smart Acquirer Failover • Signed Webhooks",
     activePort: 3002,
     tabs: [
       { id: "overview", label: "Overview & Ledger" },
@@ -25,11 +25,11 @@ export function renderGatewayUiHtml(): string {
           <div class="kpi-card"><div class="kpi-label">Merchant Payable</div><div class="kpi-value" id="kpiPayable">—</div><div class="kpi-sub">Double-Entry Ledger</div></div>
           <div class="kpi-card"><div class="kpi-label">Rolling Reserve</div><div class="kpi-value" id="kpiReserve">—</div><div class="kpi-sub">10% Holdback</div></div>
           <div class="kpi-card"><div class="kpi-label">Dashboard Parity</div><div class="kpi-value" id="kpiParity">—</div><div class="kpi-sub">Zero Ledger Drift</div></div>
-          <div class="kpi-card"><div class="kpi-label">PCI Vault Audit</div><div class="kpi-value" id="kpiPci">—</div><div class="kpi-sub">Isolated p2-vault.sqlite</div></div>
+          <div class="kpi-card"><div class="kpi-label">PCI Vault Audit</div><div class="kpi-value" id="kpiPci">—</div><div class="kpi-sub">Isolated Card Vault</div></div>
         </div>
         <div class="card">
           <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:0;">
-            <div><h3>Merchant Health &amp; Compliance Checks</h3><p class="hint" style="margin:0;">Verify ledger-to-dashboard parity and zero raw PAN leaks across SQLite &amp; logs.</p></div>
+            <div><h3>Merchant Health &amp; Compliance Checks</h3><p class="hint" style="margin:0;">Verify ledger-to-dashboard parity and zero raw card exposure across gateway storage.</p></div>
             <div class="row" style="margin:0;">
               <button onclick="checkParity(this)">Refresh Ledger Parity</button>
               <button class="secondary" onclick="runGrepAudit(this)">Run PCI Grep Audit</button>
@@ -41,7 +41,7 @@ export function renderGatewayUiHtml(): string {
       <section id="view-checkout" class="view-pane hidden">
         <div class="card">
           <h3>Hosted Checkout (PCI Token Vault Card &amp; UPI)</h3>
-          <p class="hint">Card PANs are tokenized directly in <code>p2-vault.sqlite</code>; the Gateway only handles opaque tokens.</p>
+          <p class="hint">Card numbers are tokenized directly in the isolated PCI Vault; checkout only handles opaque tokens.</p>
           <div class="row">
             <label>Order Amount (paise)<input id="ordAmt" type="number" value="150000" /></label>
             <label>Card PAN (Vault)<input id="cardPan" value="4242424242424242" /></label>

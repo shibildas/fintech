@@ -236,7 +236,7 @@ export function renderFintechShellHtml(params: {
       </div>
       <div id="loginErr" class="badge err hidden" style="margin-bottom:12px;width:100%;justify-content:center;padding:8px;"></div>
       <button id="loginBtn" type="submit" style="width:100%;padding:11px;">Sign In</button>
-      <div class="login-foot">Passwords are stored as salted <code>scrypt</code> hashes in SQLite. Demo passwords are printed to server logs &amp; README.</div>
+      <div class="login-foot">Protected workspace authentication. Select an account above or enter your credentials.</div>
     </form>
   </div>
 

@@ -25,11 +25,11 @@ export function renderSwitchAdminHtml(activeCycleId: string): string {
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-label">Active Settlement Cycle</div><div class="kpi-value mono" id="kpiCycle">${activeCycleId}</div><div class="kpi-sub">T+1 Multilateral Netting</div></div>
           <div class="kpi-card"><div class="kpi-label">Total Bank Liquidity</div><div class="kpi-value" id="kpiLiquidity">—</div><div class="kpi-sub">Across BANKA, BANKB, BANKC</div></div>
-          <div class="kpi-card"><div class="kpi-label">Seeded Accounts</div><div class="kpi-value" id="kpiAcctCount">4</div><div class="kpi-sub">Persistent SQLite Ledgers</div></div>
+          <div class="kpi-card"><div class="kpi-label">Connected Accounts</div><div class="kpi-value" id="kpiAcctCount">4</div><div class="kpi-sub">Double-Entry Bank Ledgers</div></div>
         </div>
         <div class="card">
           <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <div><h3>Live Bank Core Balances</h3><p class="hint" style="margin:0;">Double-entry ledger &amp; available balances persisted in SQLite.</p></div>
+            <div><h3>Live Bank Core Balances</h3><p class="hint" style="margin:0;">Real-time ledger &amp; available balances across connected member banks.</p></div>
             <button onclick="loadBalances(this)">Refresh Balances</button>
           </div>
           <div class="table-wrap">
