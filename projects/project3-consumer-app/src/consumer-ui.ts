@@ -1,39 +1,48 @@
 import { renderFintechShellHtml } from "@fintech/core";
 
 /**
- * Project 3 — Consumer UPI App, Real-Time Risk Engine, Shadow Mode & Dispute Desk HTML/JS UI.
+ * Project 3 — Consumer UPI App, Real-Time Risk Engine & Dispute Desk HTML/JS UI.
  */
 export function renderConsumerUiHtml(): string {
   return renderFintechShellHtml({
-    title: "Project 3 — Consumer UPI App, Real-Time Risk Engine & Dispute Desk",
-    subtitle:
-      "Browser Ed25519 Device Signing • Salted Nonce PIN Proof • 4 Pay Paths • Collects • Shadow Diff • Disputes",
+    title: "Project 3 — Consumer UPI App & Risk Engine",
+    subtitle: "Browser Ed25519 Device Signing • Salted Nonce PIN Proof • Shadow Diff & Disputes",
     activePort: 3003,
     bodyHtml: `
       <div class="auth-bar">
-        <label>Ops Token (X-Ops-Token for Risk/Disputes/Chaos — see server stdout)<input id="opsToken" type="password" placeholder="Paste X-Ops-Token" /></label>
-        <button onclick="runShadow100()">Run 100-Payment Shadow Diff</button>
-        <button class="secondary" onclick="promoteShadow()">Promote v2.0-strict</button>
-        <button class="secondary" onclick="toggleAirplane(true)">Airplane Mode ON</button>
-        <button class="secondary" onclick="toggleAirplane(false)">Airplane Mode OFF</button>
+        <label>Ops Token (Risk / Disputes / Chaos — stdout)<input id="opsToken" type="password" placeholder="Paste X-Ops-Token" /></label>
+        <button onclick="runShadow100(this)">Run 100-Payment Shadow Diff</button>
+        <button class="secondary" onclick="promoteShadow(this)">Promote v2.0-strict</button>
+        <button class="secondary" onclick="toggleAirplane(this, true)">Airplane ON</button>
+        <button class="secondary" onclick="toggleAirplane(this, false)">Airplane OFF</button>
       </div>
       <div class="grid">
         <div class="card">
-          <h2>1. Consumer Onboarding + Browser Ed25519 Binding</h2>
+          <div class="card-head">
+            <h2><span class="step-pill">1</span> Onboarding &amp; Ed25519 Device Binding</h2>
+            <p class="hint">Generates an Ed25519 keypair in browser SubtleCrypto; private key stays local.</p>
+          </div>
           <div class="row">
             <label>Mobile<input id="cMob" value="9876543210" /></label>
             <label>Full Name<input id="cName" value="Anita Sharma" /></label>
-            <button onclick="doSignup()">1. Signup (OTP in stdout)</button>
+            <button onclick="doSignup(this)">1. Signup</button>
           </div>
           <div class="row">
             <label>SMS OTP<input id="cOtp" type="password" placeholder="Enter SMS OTP" /></label>
             <label>Set UPI PIN<input id="cPin" type="password" placeholder="4-6 digit PIN" /></label>
-            <button onclick="doVerifyAndBind()">2. Verify OTP + Bind Ed25519 + Link BANKA</button>
+            <button onclick="doVerifyAndBind(this)">2. Verify &amp; Bind</button>
           </div>
-          <pre id="onboardOut" class="out">Ed25519 keypair generated in browser SubtleCrypto; private key never leaves browser...</pre>
+          <div class="out-wrap">
+            <div id="onboardOutMeta" class="out-meta"></div>
+            <pre id="onboardOut" class="out">Click Signup, read SMS OTP in stdout, then Verify &amp; Bind.</pre>
+          </div>
         </div>
+
         <div class="card">
-          <h2>2. Ed25519 Signed Pay (4 Paths) & Honest Pending</h2>
+          <div class="card-head">
+            <h2><span class="step-pill">2</span> Ed25519 Signed Pay (4 Paths)</h2>
+            <p class="hint">Signs payload with Ed25519 and computes client-side salted nonce PIN proof.</p>
+          </div>
           <div class="row">
             <label>Pay Path
               <select id="payPath">
@@ -43,59 +52,83 @@ export function renderConsumerUiHtml(): string {
                 <option value="BANK_IFSC">BANK_IFSC</option>
               </select>
             </label>
-            <label>Target (VPA / QR URI / Mobile / Acct)<input id="payTarget" value="shop@psp2" /></label>
-            <label>IFSC (BANK_IFSC only)<input id="payIfsc" placeholder="SBIN0001234" /></label>
+            <label>Target<input id="payTarget" value="shop@psp2" /></label>
+            <label>IFSC (BANK_IFSC)<input id="payIfsc" placeholder="SBIN0001234" /></label>
           </div>
           <div class="row">
             <label>Amount (paise)<input id="pAmt" type="number" value="25000" /></label>
             <label>UPI PIN<input id="pPin" type="password" placeholder="Enter UPI PIN" /></label>
-            <button onclick="doSignedPay()">Sign & Pay (Ed25519)</button>
-            <button class="secondary" onclick="syncPending()">Sync Pending Txns</button>
+            <button onclick="doSignedPay(this)">Sign &amp; Pay</button>
+            <button class="secondary" onclick="syncPending(this)">Sync Pending</button>
           </div>
-          <pre id="payOut" class="out">Bind Ed25519 device first, then send signed payment...</pre>
+          <div class="out-wrap">
+            <div id="payOutMeta" class="out-meta"></div>
+            <pre id="payOut" class="out">Bind Ed25519 device first, then send a signed payment.</pre>
+          </div>
         </div>
+
         <div class="card">
-          <h2>3. Collect Requests & Anti-Spam Block</h2>
+          <div class="card-head">
+            <h2><span class="step-pill">3</span> Collect Requests &amp; Anti-Spam</h2>
+            <p class="hint">Create, approve, decline, or block abusive collect requesters.</p>
+          </div>
           <div class="row">
             <label>Payer VPA<input id="colPayer" value="anita@psp1" /></label>
             <label>Amount (paise)<input id="colAmt" type="number" value="15000" /></label>
-            <button onclick="createCollect()">Request Collect</button>
+            <button onclick="createCollect(this)">Request Collect</button>
           </div>
           <div class="row">
             <label>Collect ID<input id="colId" placeholder="col_..." /></label>
-            <button onclick="approveCollect()">Approve</button>
-            <button class="danger" onclick="declineCollect()">Decline</button>
-            <button class="secondary" onclick="blockRequester()">Block Requester</button>
+            <button onclick="approveCollect(this)">Approve</button>
+            <button class="danger" onclick="declineCollect(this)">Decline</button>
+            <button class="secondary" onclick="blockRequester(this)">Block</button>
           </div>
-          <pre id="colOut" class="out">Signed collect request lifecycle...</pre>
+          <div class="out-wrap">
+            <div id="colOutMeta" class="out-meta"></div>
+            <pre id="colOut" class="out">Signed collect request lifecycle.</pre>
+          </div>
         </div>
+
         <div class="card">
-          <h2>4. Real-Time Risk Engine (&lt;100ms) & Shadow Mode</h2>
+          <div class="card-head">
+            <h2><span class="step-pill">4</span> Real-Time Risk Engine &amp; Shadow Diff</h2>
+            <p class="hint">Sub-100ms scoring, timeout fallback split, and v1.0 vs v2.0-strict shadow diff.</p>
+          </div>
           <div class="row">
             <label>Payee VPA<input id="rPayee" value="unknown@psp2" /></label>
             <label>Amount (paise)<input id="rAmt" type="number" value="600000" /></label>
-            <button onclick="scoreRisk()">Score Payment</button>
+            <button onclick="scoreRisk(this)">Score Payment</button>
           </div>
           <div class="row">
-            <button class="danger" onclick="toggleRiskFallback(true)">Timeout Fallback ON</button>
-            <button class="secondary" onclick="toggleRiskFallback(false)">Timeout Fallback OFF</button>
+            <button class="danger" onclick="toggleRiskFallback(this, true)">Timeout Fallback ON</button>
+            <button class="secondary" onclick="toggleRiskFallback(this, false)">Timeout Fallback OFF</button>
           </div>
-          <pre id="riskOut" class="out">Requires X-Ops-Token. Risk score, fallback split & shadow diff...</pre>
+          <div class="out-wrap">
+            <div id="riskOutMeta" class="out-meta"></div>
+            <pre id="riskOut" class="out">Requires X-Ops-Token above.</pre>
+          </div>
         </div>
+
         <div class="card">
-          <h2>5. Dispute Desk & NPCI Case File</h2>
+          <div class="card-head">
+            <h2><span class="step-pill">5</span> Dispute Desk &amp; NPCI Case File</h2>
+            <p class="hint">Auto-resolve via Switch reversal or escalate to download an NPCI case file.</p>
+          </div>
           <div class="row">
             <label>Switch RRN<input id="dRrn" value="632810000999" /></label>
             <label>Amount (paise)<input id="dAmt" type="number" value="50000" /></label>
-            <button onclick="openDispute()">Open Dispute</button>
-            <button class="secondary" onclick="fireReversal()">Simulate Switch Reversal</button>
+            <button onclick="openDispute(this)">Open Dispute</button>
+            <button class="secondary" onclick="fireReversal(this)">Switch Reversal</button>
           </div>
           <div class="row">
             <label>Dispute ID<input id="dId" placeholder="dsp_..." /></label>
-            <button class="danger" onclick="escalateDispute()">Escalate</button>
-            <button class="secondary" onclick="downloadCaseFile()">NPCI Case File</button>
+            <button class="danger" onclick="escalateDispute(this)">Escalate</button>
+            <button class="secondary" onclick="downloadCaseFile(this)">NPCI Case File</button>
           </div>
-          <pre id="dispOut" class="out">Open dispute -> auto-resolve on reversal or escalate for NPCI case file...</pre>
+          <div class="out-wrap">
+            <div id="dispOutMeta" class="out-meta"></div>
+            <pre id="dispOut" class="out">Dispute status &amp; SLA case file output.</pre>
+          </div>
         </div>
       </div>`,
     scriptJs: `
@@ -118,7 +151,7 @@ export function renderConsumerUiHtml(): string {
       }
       async function signedDeviceFetch(method, path, bodyObj) {
         if (!deviceState.privateKey || !deviceState.deviceId) {
-          return { status: 0, body: { error: "Bind an Ed25519 device in Card 1 first!" } };
+          return { status: 401, body: { error: "Bind an Ed25519 device in Step 1 first" } };
         }
         const rawBody = bodyObj === undefined ? "" : JSON.stringify(bodyObj);
         const ts = Date.now();
@@ -135,189 +168,198 @@ export function renderConsumerUiHtml(): string {
         const r = await fetch(path, { method, headers, body: bodyObj === undefined ? undefined : rawBody });
         return { status: r.status, body: await r.json() };
       }
-      async function doSignup() {
-        const r = await fetch("/api/signup", {
-          method: "POST", headers: { "content-type": "application/json" },
-          body: JSON.stringify({ mobileNumber: document.getElementById("cMob").value, fullName: document.getElementById("cName").value })
+      async function doSignup(btn) {
+        return runAction(btn, "onboardOut", "Sending SMS OTP", async () => {
+          const r = await fetch("/api/signup", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ mobileNumber: document.getElementById("cMob").value, fullName: document.getElementById("cName").value })
+          });
+          const data = await r.json();
+          if (data.customer?.id) deviceState.customerId = data.customer.id;
+          return { status: r.status, body: data, toastLabel: "Signup" };
         });
-        const data = await r.json();
-        if (data.customer?.id) deviceState.customerId = data.customer.id;
-        show("onboardOut", { status: r.status, body: data });
       }
-      async function doVerifyAndBind() {
+      async function doVerifyAndBind(btn) {
         const otp = document.getElementById("cOtp").value.trim();
         const rawPin = document.getElementById("cPin").value.trim();
-        if (!otp) return show("onboardOut", { error: "Please enter SMS OTP (see server stdout)" });
-        if (!rawPin) return show("onboardOut", { error: "Please enter a 4-6 digit UPI PIN" });
-
-        const vr = await fetch("/api/otp/verify", {
-          method: "POST", headers: { "content-type": "application/json" },
-          body: JSON.stringify({ mobileNumber: document.getElementById("cMob").value, otp })
-        });
-        const vData = await vr.json();
-        if (!vr.ok) return show("onboardOut", { step: "otp_verify", status: vr.status, body: vData });
-        deviceState.customerId = vData.customer.id;
-        deviceState.onboardingToken = vData.onboardingToken;
-        const obHeaders = { "content-type": "application/json", "x-onboarding-token": deviceState.onboardingToken };
-
-        const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-        const spki = await crypto.subtle.exportKey("spki", kp.publicKey);
-        deviceState.privateKey = kp.privateKey;
-        deviceState.deviceId = "web_dev_" + Date.now();
-
-        const br = await fetch("/api/devices/bind", {
-          method: "POST", headers: obHeaders,
-          body: JSON.stringify({ customerId: deviceState.customerId, deviceId: deviceState.deviceId, publicKeyPem: spkiToPem(spki) })
-        });
-        const bData = await br.json();
-        if (!br.ok) return show("onboardOut", { step: "device_bind", status: br.status, body: bData });
-
-        const pinRes = await fetch("/api/pin/set", {
-          method: "POST", headers: obHeaders,
-          body: JSON.stringify({ customerId: deviceState.customerId, rawPin })
-        });
-        const pinData = await pinRes.json();
-        if (!pinRes.ok) return show("onboardOut", { step: "pin_set", status: pinRes.status, body: pinData });
-
-        const lr = await fetch("/api/accounts/link", {
-          method: "POST", headers: obHeaders,
-          body: JSON.stringify({ customerId: deviceState.customerId, bankId: "BANKA", accountNumber: "987654324521" })
-        });
-        const lData = await lr.json();
-        if (!lr.ok) return show("onboardOut", { step: "link_account", status: lr.status, body: lData });
-
-        const handle = "web." + Date.now().toString().slice(-5);
-        const vpaRes = await fetch("/api/vpas", {
-          method: "POST", headers: obHeaders,
-          body: JSON.stringify({ customerId: deviceState.customerId, linkedAccountId: lData.id, handle })
-        });
-        const vpaData = await vpaRes.json();
-        if (!vpaRes.ok) return show("onboardOut", { step: "create_vpa", status: vpaRes.status, body: vpaData });
-        deviceState.vpa = vpaData.vpa;
-        show("onboardOut", { bound: bData, linked: lData, vpa: vpaData });
-      }
-      async function doSignedPay() {
-        const rawPin = document.getElementById("pPin").value.trim();
-        if (!rawPin) return show("payOut", { error: "Please enter UPI PIN" });
-        const ch = await signedDeviceFetch("POST", "/api/pin/challenge", { customerId: deviceState.customerId });
-        if (ch.status !== 200) return show("payOut", { step: "pin_challenge", ...ch });
-        const pinHash = await sha256Hex(ch.body.pinSalt + ":" + rawPin);
-        const clientPinProofHex = await sha256Hex(ch.body.txnNonce + ":" + pinHash);
-
-        const clientTxnId = "WEB-" + Date.now();
-        const pending = JSON.parse(localStorage.getItem("fintech_p3_pending_txns") || "[]");
-        pending.unshift(clientTxnId);
-        localStorage.setItem("fintech_p3_pending_txns", JSON.stringify(pending.slice(0, 10)));
-
-        const payPath = document.getElementById("payPath").value;
-        const target = document.getElementById("payTarget").value.trim();
-        const payloadObj = {
-          customerId: deviceState.customerId,
-          clientTxnId,
-          payPath,
-          payerVpa: deviceState.vpa,
-          amountPaise: Number(document.getElementById("pAmt").value),
-          rawPin,
-          txnNonce: ch.body.txnNonce,
-          clientPinProofHex
-        };
-        if (payPath === "VPA") payloadObj.payeeVpa = target;
-        else if (payPath === "QR") payloadObj.qrUri = target;
-        else if (payPath === "MOBILE") payloadObj.payeeMobile = target;
-        else if (payPath === "BANK_IFSC") {
-          payloadObj.payeeAccountNumber = target;
-          payloadObj.payeeIfsc = document.getElementById("payIfsc").value.trim();
+        if (!otp || !rawPin) {
+          toast("Enter SMS OTP and UPI PIN", "err");
+          return show("onboardOut", { error: "Please enter SMS OTP and 4-6 digit UPI PIN" }, { status: 400 });
         }
-        show("payOut", await signedDeviceFetch("POST", "/api/pay", payloadObj));
-      }
-      async function syncPending() {
-        const pending = JSON.parse(localStorage.getItem("fintech_p3_pending_txns") || "[]");
-        if (!pending.length) return show("payOut", "No pending transaction in localStorage.");
-        const results = [];
-        for (const id of pending.slice(0, 3)) {
-          results.push(await signedDeviceFetch("GET", "/api/transactions/" + encodeURIComponent(id)));
-        }
-        show("payOut", results);
-      }
-      async function createCollect() {
-        const res = await signedDeviceFetch("POST", "/api/collects", {
-          requesterVpa: deviceState.vpa || "shop@psp2",
-          payerVpa: document.getElementById("colPayer").value.trim(),
-          amountPaise: Number(document.getElementById("colAmt").value),
-          note: "Web UI collect request"
+        return runAction(btn, "onboardOut", "Binding Ed25519", async () => {
+          const vr = await fetch("/api/otp/verify", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ mobileNumber: document.getElementById("cMob").value, otp })
+          });
+          const vData = await vr.json();
+          if (!vr.ok) return { status: vr.status, body: vData, toastLabel: "OTP Verify" };
+          deviceState.customerId = vData.customer.id;
+          deviceState.onboardingToken = vData.onboardingToken;
+          const obHeaders = { "content-type": "application/json", "x-onboarding-token": deviceState.onboardingToken };
+
+          const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+          const spki = await crypto.subtle.exportKey("spki", kp.publicKey);
+          deviceState.privateKey = kp.privateKey;
+          deviceState.deviceId = "web_dev_" + Date.now();
+
+          const br = await fetch("/api/devices/bind", { method: "POST", headers: obHeaders, body: JSON.stringify({ customerId: deviceState.customerId, deviceId: deviceState.deviceId, publicKeyPem: spkiToPem(spki) }) });
+          const bData = await br.json();
+          if (!br.ok) return { status: br.status, body: bData, toastLabel: "Device Bind" };
+
+          const pinRes = await fetch("/api/pin/set", { method: "POST", headers: obHeaders, body: JSON.stringify({ customerId: deviceState.customerId, rawPin }) });
+          const pinData = await pinRes.json();
+          if (!pinRes.ok) return { status: pinRes.status, body: pinData, toastLabel: "Set PIN" };
+
+          const lr = await fetch("/api/accounts/link", { method: "POST", headers: obHeaders, body: JSON.stringify({ customerId: deviceState.customerId, bankId: "BANKA", accountNumber: "987654324521" }) });
+          const lData = await lr.json();
+          if (!lr.ok) return { status: lr.status, body: lData, toastLabel: "Link Account" };
+
+          const handle = "web." + Date.now().toString().slice(-5);
+          const vpaRes = await fetch("/api/vpas", { method: "POST", headers: obHeaders, body: JSON.stringify({ customerId: deviceState.customerId, linkedAccountId: lData.id, handle }) });
+          const vpaData = await vpaRes.json();
+          if (!vpaRes.ok) return { status: vpaRes.status, body: vpaData, toastLabel: "Create VPA" };
+          deviceState.vpa = vpaData.vpa;
+          return { status: 200, display: { bound: bData, linked: lData, vpa: vpaData }, toastLabel: "Device Bound" };
         });
-        if (res.body?.id) document.getElementById("colId").value = res.body.id;
-        show("colOut", res);
       }
-      async function approveCollect() {
-        const id = document.getElementById("colId").value.trim();
-        if (!id) return show("colOut", { error: "Enter Collect ID first" });
+      async function doSignedPay(btn) {
         const rawPin = document.getElementById("pPin").value.trim();
-        show("colOut", await signedDeviceFetch("POST", "/api/collects/" + encodeURIComponent(id) + "/approve", { rawPin }));
+        if (!rawPin) {
+          toast("Enter UPI PIN", "err");
+          return show("payOut", { error: "Please enter UPI PIN" }, { status: 400 });
+        }
+        return runAction(btn, "payOut", "Signing & paying", async () => {
+          const ch = await signedDeviceFetch("POST", "/api/pin/challenge", { customerId: deviceState.customerId });
+          if (ch.status !== 200) return { ...ch, toastLabel: "PIN Challenge" };
+          const pinHash = await sha256Hex(ch.body.pinSalt + ":" + rawPin);
+          const clientPinProofHex = await sha256Hex(ch.body.txnNonce + ":" + pinHash);
+
+          const clientTxnId = "WEB-" + Date.now();
+          const pending = JSON.parse(localStorage.getItem("fintech_p3_pending_txns") || "[]");
+          pending.unshift(clientTxnId);
+          localStorage.setItem("fintech_p3_pending_txns", JSON.stringify(pending.slice(0, 10)));
+
+          const payPath = document.getElementById("payPath").value;
+          const target = document.getElementById("payTarget").value.trim();
+          const payloadObj = {
+            customerId: deviceState.customerId, clientTxnId, payPath, payerVpa: deviceState.vpa,
+            amountPaise: Number(document.getElementById("pAmt").value), rawPin, txnNonce: ch.body.txnNonce, clientPinProofHex
+          };
+          if (payPath === "VPA") payloadObj.payeeVpa = target;
+          else if (payPath === "QR") payloadObj.qrUri = target;
+          else if (payPath === "MOBILE") payloadObj.payeeMobile = target;
+          else if (payPath === "BANK_IFSC") { payloadObj.payeeAccountNumber = target; payloadObj.payeeIfsc = document.getElementById("payIfsc").value.trim(); }
+          return { ...(await signedDeviceFetch("POST", "/api/pay", payloadObj)), toastLabel: "Signed Pay" };
+        });
       }
-      async function declineCollect() {
+      async function syncPending(btn) {
+        return runAction(btn, "payOut", "Syncing pending", async () => {
+          const pending = JSON.parse(localStorage.getItem("fintech_p3_pending_txns") || "[]");
+          if (!pending.length) return { status: 200, display: "No pending transactions in localStorage.", toastLabel: "Sync" };
+          const results = [];
+          for (const id of pending.slice(0, 3)) results.push(await signedDeviceFetch("GET", "/api/transactions/" + encodeURIComponent(id)));
+          return { status: 200, display: results, toastLabel: "Sync Pending" };
+        });
+      }
+      async function createCollect(btn) {
+        return runAction(btn, "colOut", "Requesting collect", async () => {
+          const res = await signedDeviceFetch("POST", "/api/collects", {
+            requesterVpa: deviceState.vpa || "shop@psp2",
+            payerVpa: document.getElementById("colPayer").value.trim(),
+            amountPaise: Number(document.getElementById("colAmt").value),
+            note: "Web UI collect request"
+          });
+          if (res.body?.collect?.id) document.getElementById("colId").value = res.body.collect.id;
+          return { ...res, toastLabel: "Collect Request" };
+        });
+      }
+      async function approveCollect(btn) {
         const id = document.getElementById("colId").value.trim();
-        if (!id) return show("colOut", { error: "Enter Collect ID first" });
-        show("colOut", await signedDeviceFetch("POST", "/api/collects/" + encodeURIComponent(id) + "/decline", {}));
-      }
-      async function blockRequester() {
-        show("colOut", await signedDeviceFetch("POST", "/api/collects/block", {
-          payerVpa: deviceState.vpa || "anita@psp1",
-          requesterVpa: document.getElementById("colPayer").value.trim()
+        if (!id) return show("colOut", { error: "Enter Collect ID first" }, { status: 400 });
+        return runAction(btn, "colOut", "Approving collect", async () => ({
+          ...(await signedDeviceFetch("POST", "/api/collects/" + encodeURIComponent(id) + "/approve", { rawPin: document.getElementById("pPin").value.trim() })),
+          toastLabel: "Approve Collect"
         }));
       }
-      async function toggleAirplane(enabled) {
-        const r = await fetch("/api/chaos/airplane-mode", { method: "PUT", headers: opsHeaders(), body: JSON.stringify({ enabled }) });
-        show("payOut", { status: r.status, body: await r.json() });
+      async function declineCollect(btn) {
+        const id = document.getElementById("colId").value.trim();
+        if (!id) return show("colOut", { error: "Enter Collect ID first" }, { status: 400 });
+        return runAction(btn, "colOut", "Declining collect", async () => ({
+          ...(await signedDeviceFetch("POST", "/api/collects/" + encodeURIComponent(id) + "/decline", {})),
+          toastLabel: "Decline Collect"
+        }));
       }
-      async function scoreRisk() {
-        const r = await fetch("/api/risk/score", {
-          method: "POST", headers: opsHeaders(),
-          body: JSON.stringify({ payeeVpa: document.getElementById("rPayee").value, amountPaise: Number(document.getElementById("rAmt").value), isNewCounterparty: true })
+      async function blockRequester(btn) {
+        return runAction(btn, "colOut", "Blocking requester", async () => ({
+          ...(await signedDeviceFetch("POST", "/api/collects/block", { payerVpa: deviceState.vpa || "anita@psp1", requesterVpa: document.getElementById("colPayer").value.trim() })),
+          toastLabel: "Block Requester"
+        }));
+      }
+      async function toggleAirplane(btn, enabled) {
+        return runAction(btn, "payOut", enabled ? "Enabling airplane" : "Disabling airplane", async () => {
+          const r = await fetch("/api/chaos/airplane-mode", { method: "PUT", headers: opsHeaders(), body: JSON.stringify({ enabled }) });
+          return { status: r.status, body: await r.json(), toastLabel: "Airplane Mode" };
         });
-        show("riskOut", { status: r.status, body: await r.json() });
       }
-      async function toggleRiskFallback(enabled) {
-        const r = await fetch("/api/risk/timeout-fallback", { method: "PUT", headers: opsHeaders(), body: JSON.stringify({ enabled }) });
-        show("riskOut", { status: r.status, body: await r.json() });
-      }
-      async function runShadow100() {
-        const r = await fetch("/api/risk/shadow/run-100", { method: "POST", headers: opsHeaders(), body: "{}" });
-        show("riskOut", { status: r.status, body: await r.json() });
-      }
-      async function promoteShadow() {
-        const r = await fetch("/api/risk/shadow/promote", { method: "POST", headers: opsHeaders(), body: "{}" });
-        show("riskOut", { status: r.status, body: await r.json() });
-      }
-      async function openDispute() {
-        const r = await fetch("/api/disputes", {
-          method: "POST", headers: opsHeaders(),
-          body: JSON.stringify({ switchRrn: document.getElementById("dRrn").value, amountPaise: Number(document.getElementById("dAmt").value) })
+      async function scoreRisk(btn) {
+        return runAction(btn, "riskOut", "Scoring risk", async () => {
+          const r = await fetch("/api/risk/score", {
+            method: "POST", headers: opsHeaders(),
+            body: JSON.stringify({ payeeVpa: document.getElementById("rPayee").value, amountPaise: Number(document.getElementById("rAmt").value), isNewCounterparty: true })
+          });
+          return { status: r.status, body: await r.json(), toastLabel: "Risk Score" };
         });
-        const data = await r.json();
-        if (data?.id) document.getElementById("dId").value = data.id;
-        show("dispOut", { status: r.status, body: data });
       }
-      async function fireReversal() {
-        const r = await fetch("/api/disputes/switch-reversal", {
-          method: "POST", headers: opsHeaders(),
-          body: JSON.stringify({ switchRrn: document.getElementById("dRrn").value })
+      async function toggleRiskFallback(btn, enabled) {
+        return runAction(btn, "riskOut", "Updating fallback", async () => {
+          const r = await fetch("/api/risk/timeout-fallback", { method: "PUT", headers: opsHeaders(), body: JSON.stringify({ enabled }) });
+          return { status: r.status, body: await r.json(), toastLabel: "Risk Fallback" };
         });
-        show("dispOut", { status: r.status, body: await r.json() });
       }
-      async function escalateDispute() {
+      async function runShadow100(btn) {
+        return runAction(btn, "riskOut", "Running 100-txn diff", async () => {
+          const r = await fetch("/api/risk/shadow/run-100", { method: "POST", headers: opsHeaders(), body: "{}" });
+          return { status: r.status, body: await r.json(), toastLabel: "Shadow Diff" };
+        });
+      }
+      async function promoteShadow(btn) {
+        return runAction(btn, "riskOut", "Promoting ruleset", async () => {
+          const r = await fetch("/api/risk/shadow/promote", { method: "POST", headers: opsHeaders(), body: "{}" });
+          return { status: r.status, body: await r.json(), toastLabel: "Promote Ruleset" };
+        });
+      }
+      async function openDispute(btn) {
+        return runAction(btn, "dispOut", "Opening dispute", async () => {
+          const r = await fetch("/api/disputes", {
+            method: "POST", headers: opsHeaders(),
+            body: JSON.stringify({ switchRrn: document.getElementById("dRrn").value, amountPaise: Number(document.getElementById("dAmt").value) })
+          });
+          const data = await r.json();
+          if (data?.id) document.getElementById("dId").value = data.id;
+          return { status: r.status, body: data, toastLabel: "Open Dispute" };
+        });
+      }
+      async function fireReversal(btn) {
+        return runAction(btn, "dispOut", "Firing reversal", async () => {
+          const r = await fetch("/api/disputes/switch-reversal", { method: "POST", headers: opsHeaders(), body: JSON.stringify({ switchRrn: document.getElementById("dRrn").value }) });
+          return { status: r.status, body: await r.json(), toastLabel: "Switch Reversal" };
+        });
+      }
+      async function escalateDispute(btn) {
         const id = document.getElementById("dId").value.trim();
-        if (!id) return show("dispOut", { error: "Enter Dispute ID first" });
-        const r = await fetch("/api/disputes/" + encodeURIComponent(id) + "/escalate", {
-          method: "POST", headers: opsHeaders(), body: JSON.stringify({ reason: "Escalated from Ops Console" })
+        if (!id) return show("dispOut", { error: "Enter Dispute ID first" }, { status: 400 });
+        return runAction(btn, "dispOut", "Escalating", async () => {
+          const r = await fetch("/api/disputes/" + encodeURIComponent(id) + "/escalate", { method: "POST", headers: opsHeaders(), body: JSON.stringify({ reason: "Escalated from Ops Console" }) });
+          return { status: r.status, body: await r.json(), toastLabel: "Escalate Dispute" };
         });
-        show("dispOut", { status: r.status, body: await r.json() });
       }
-      async function downloadCaseFile() {
+      async function downloadCaseFile(btn) {
         const id = document.getElementById("dId").value.trim();
-        if (!id) return show("dispOut", { error: "Enter Dispute ID first" });
-        const r = await fetch("/api/disputes/" + encodeURIComponent(id) + "/case-file", { headers: opsHeaders() });
-        show("dispOut", { status: r.status, body: await r.json() });
+        if (!id) return show("dispOut", { error: "Enter Dispute ID first" }, { status: 400 });
+        return runAction(btn, "dispOut", "Fetching case file", async () => {
+          const r = await fetch("/api/disputes/" + encodeURIComponent(id) + "/case-file", { headers: opsHeaders() });
+          return { status: r.status, body: await r.json(), toastLabel: "NPCI Case File" };
+        });
       }
     `,
   });
