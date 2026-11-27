@@ -7,6 +7,7 @@ export * from "./acquirer-simulator.ts";
 export * from "./routing-engine.ts";
 export * from "./webhook-worker.ts";
 export * from "./gateway-engine.ts";
+export * from "./gateway-server.ts";
 
 /**
  * Creates a ready-to-use Project 2 Gateway topology with:

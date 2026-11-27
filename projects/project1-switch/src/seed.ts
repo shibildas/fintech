@@ -1,3 +1,5 @@
+import path from "node:path";
+import { ensureDataDir } from "../../../packages/core/src/index.ts";
 import { BankCoreSimulator } from "./bank-core.ts";
 import { PspSimulator } from "./psp-simulator.ts";
 
@@ -20,12 +22,19 @@ export interface SeededProject1Topology {
   };
 }
 
-export function createSeededTopology(): SeededProject1Topology {
+export function createSeededTopology(options?: { dataDir?: string }): SeededProject1Topology {
+  if (options?.dataDir) {
+    ensureDataDir(options.dataDir);
+  }
+  const bankDb = (name: string) =>
+    options?.dataDir ? path.join(options.dataDir, name) : ":memory:";
+
   const BANKA = new BankCoreSimulator({
     bankId: "BANKA",
     bankName: "Apex National Bank",
     branchPrefix: "BNKA0001",
     sharedSecret: "secret_bank_a_shared_with_switch",
+    dbPath: bankDb("p1-bankA.sqlite"),
   });
 
   const BANKB = new BankCoreSimulator({
@@ -33,6 +42,7 @@ export function createSeededTopology(): SeededProject1Topology {
     bankName: "Bharat State Bank",
     branchPrefix: "BNKB0001",
     sharedSecret: "secret_bank_b_shared_with_switch",
+    dbPath: bankDb("p1-bankB.sqlite"),
   });
 
   const BANKC = new BankCoreSimulator({
@@ -40,6 +50,7 @@ export function createSeededTopology(): SeededProject1Topology {
     bankName: "Commerce Citi Bank",
     branchPrefix: "BNKC0001",
     sharedSecret: "secret_bank_c_shared_with_switch",
+    dbPath: bankDb("p1-bankC.sqlite"),
   });
 
   const PSP1 = new PspSimulator({
@@ -54,35 +65,43 @@ export function createSeededTopology(): SeededProject1Topology {
     sharedSecret: "secret_psp_2_shared_with_switch",
   });
 
-  // Seed Bank Accounts
-  // 1. Anita at BANKA (₹10,000.00 = 1,000,000 paise)
-  BANKA.seedCustomerAccount({
+  const seedAccountIfMissing = (
+    bank: BankCoreSimulator,
+    acct: Parameters<BankCoreSimulator["seedCustomerAccount"]>[0]
+  ) => {
+    const exists = bank.db
+      .prepare(`SELECT 1 FROM accounts WHERE account_number = ?`)
+      .get(acct.accountNumber);
+    if (!exists) {
+      bank.seedCustomerAccount(acct);
+    }
+  };
+
+  // Seed Bank Accounts idempotently (preserves balances across persistent .data/ restarts)
+  seedAccountIfMissing(BANKA, {
     accountNumber: "987654324521",
     holderName: "Anita Sharma",
     rawPin: "1234",
     openingBalancePaise: 1_000_000,
-    perTransactionLimitPaise: 500_000, // ₹5,000.00
-    dailyLimitPaise: 1_000_000, // ₹10,000.00
+    perTransactionLimitPaise: 500_000,
+    dailyLimitPaise: 1_000_000,
   });
 
-  // 2. Rahul at BANKB (₹5,000.00 = 500,000 paise)
-  BANKB.seedCustomerAccount({
+  seedAccountIfMissing(BANKB, {
     accountNumber: "876543218899",
     holderName: "Rahul Verma",
     rawPin: "5678",
     openingBalancePaise: 500_000,
   });
 
-  // 3. Coffee Cart at BANKB (₹1,000.00 = 100,000 paise)
-  BANKB.seedCustomerAccount({
+  seedAccountIfMissing(BANKB, {
     accountNumber: "876543217766",
     holderName: "Indiranagar Filter Coffee",
     rawPin: "1111",
     openingBalancePaise: 100_000,
   });
 
-  // 4. Demo Shop at BANKC (₹2,000.00 = 200,000 paise)
-  BANKC.seedCustomerAccount({
+  seedAccountIfMissing(BANKC, {
     accountNumber: "765432103344",
     holderName: "Koramangala Book Shop",
     rawPin: "4321",

@@ -89,7 +89,61 @@ export class VersionedShadowRiskEngine {
         diff_label TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS risk_rulesets (
+        version TEXT PRIMARY KEY,
+        status TEXT NOT NULL CHECK (status IN ('ACTIVE', 'SHADOW', 'RETIRED')),
+        step_up_threshold INTEGER NOT NULL,
+        decline_threshold INTEGER NOT NULL,
+        rules_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
     `);
+
+    const saved = this.db
+      .prepare(`SELECT * FROM risk_rulesets`)
+      .all() as Array<{
+      version: string;
+      status: "ACTIVE" | "SHADOW" | "RETIRED";
+      step_up_threshold: number;
+      decline_threshold: number;
+      rules_json: string;
+      created_at: string;
+    }>;
+    for (const row of saved) {
+      this.rulesets.set(row.version, {
+        version: row.version,
+        status: row.status,
+        stepUpThreshold: row.step_up_threshold,
+        declineThreshold: row.decline_threshold,
+        rules: JSON.parse(row.rules_json) as VersionedAstRule[],
+        createdAt: row.created_at,
+      });
+    }
+  }
+
+  public hasRulesets(): boolean {
+    return this.rulesets.size > 0;
+  }
+
+  private persistRuleset(r: RiskRulesetVersion): void {
+    this.db
+      .prepare(
+        `INSERT INTO risk_rulesets (version, status, step_up_threshold, decline_threshold, rules_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(version) DO UPDATE SET
+           status = excluded.status,
+           step_up_threshold = excluded.step_up_threshold,
+           decline_threshold = excluded.decline_threshold,
+           rules_json = excluded.rules_json`
+      )
+      .run(
+        r.version,
+        r.status,
+        r.stepUpThreshold,
+        r.declineThreshold,
+        JSON.stringify(r.rules),
+        r.createdAt
+      );
   }
 
   /**
@@ -112,6 +166,7 @@ export class VersionedShadowRiskEngine {
       for (const existing of this.rulesets.values()) {
         if (existing.status === "ACTIVE") {
           existing.status = "RETIRED";
+          this.persistRuleset(existing);
         }
       }
     }
@@ -125,20 +180,25 @@ export class VersionedShadowRiskEngine {
       createdAt: (params.now ?? new Date()).toISOString(),
     };
     this.rulesets.set(params.version, record);
+    this.persistRuleset(record);
     return record;
   }
 
   public promoteShadowToActive(shadowVersion: string): RiskRulesetVersion {
     const candidate = this.rulesets.get(shadowVersion);
     if (!candidate || candidate.status !== "SHADOW") {
-      throw new Error(`Ruleset "${shadowVersion}" is not in SHADOW state`);
+      throw Object.assign(new Error(`Ruleset "${shadowVersion}" is not in SHADOW state`), {
+        statusCode: 409,
+      });
     }
     for (const existing of this.rulesets.values()) {
       if (existing.status === "ACTIVE") {
         existing.status = "RETIRED";
+        this.persistRuleset(existing);
       }
     }
     candidate.status = "ACTIVE";
+    this.persistRuleset(candidate);
     return candidate;
   }
 

@@ -112,6 +112,29 @@ export class ConsumerPayEngine {
         updated_at TEXT NOT NULL
       );
     `);
+
+    const persistedVpas = this.pspBackend.db
+      .prepare(`SELECT vpa, bank_id, account_number, holder_name FROM customer_vpas`)
+      .all() as Array<{
+      vpa: string;
+      bank_id: string;
+      account_number: string;
+      holder_name: string;
+    }>;
+    for (const row of persistedVpas) {
+      if (!this.p1Psp.lookupVpaExternal(row.vpa)) {
+        try {
+          this.p1Psp.registerVpa({
+            vpa: row.vpa,
+            bankId: row.bank_id,
+            accountNumber: row.account_number,
+            holderName: row.holder_name,
+          });
+        } catch {
+          // Ignore if registered on another PSP
+        }
+      }
+    }
   }
 
   /**
@@ -301,8 +324,8 @@ export class ConsumerPayEngine {
     const now = params.now ?? new Date();
     const nowIso = now.toISOString();
 
-    // 1. Verify Ed25519 device signature & replay guard
-    this.pspBackend.verifyDeviceSignedRequest({
+    // 1. Verify Ed25519 device signature, replay guard & customer ownership
+    const verified = this.pspBackend.verifyDeviceSignedRequest({
       deviceId: params.deviceId,
       timestampMs: params.timestampMs,
       nonce: params.nonce,
@@ -310,6 +333,21 @@ export class ConsumerPayEngine {
       signatureBase64: params.signatureBase64,
       now,
     });
+    if (verified.customer.id !== params.customerId) {
+      throw Object.assign(
+        new Error("Forbidden (HTTP 403): Signed device does not belong to customerId"),
+        { statusCode: 403 }
+      );
+    }
+    const ownedVpa = this.pspBackend.db
+      .prepare(`SELECT 1 FROM customer_vpas WHERE customer_id = ? AND vpa = ?`)
+      .get(verified.customer.id, params.payerVpa.trim().toLowerCase());
+    if (!ownedVpa) {
+      throw Object.assign(
+        new Error(`Forbidden (HTTP 403): Payer VPA "${params.payerVpa}" is not owned by authenticated customer`),
+        { statusCode: 403 }
+      );
+    }
 
     // 2. Idempotency by client_txn_id (safe retries after airplane mode / app restart!)
     const existing = this.getTransactionByClientId(params.clientTxnId);

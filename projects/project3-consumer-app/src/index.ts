@@ -8,6 +8,7 @@ export * from "./collect-and-limits.ts";
 export * from "./risk-engine.ts";
 export * from "./risk-shadow-mode.ts";
 export * from "./dispute-desk.ts";
+export * from "./consumer-server.ts";
 
 export function createSeededConsumerPspTopology() {
   const p1 = createSeededTopology();
