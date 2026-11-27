@@ -1,5 +1,5 @@
 import path from "node:path";
-import { ensureDataDir, InjectableFakeClock } from "@fintech/core";
+import { ensureDataDir, InjectableFakeClock, UiAuthStore } from "@fintech/core";
 import { CentralSwitch, createSeededTopology } from "@fintech/project1-switch";
 import { createPersistentGatewayContext } from "@fintech/project2-gateway";
 import { MandateService } from "./mandate-service.ts";
@@ -14,6 +14,7 @@ import { InvoiceAndMrrService } from "./invoices-and-analytics.ts";
  */
 export interface MandatesHttpServerContext {
   clock: InjectableFakeClock;
+  uiAuth: UiAuthStore;
   mandates: MandateService;
   subs: SubscriptionService;
   executor: RecurringCycleExecutor;
@@ -95,8 +96,28 @@ export function createPersistentMandatesContext(options?: {
   const dunning = new DunningEngine({ subs, gateway: gwCtx.gateway, clock, dbPath });
   const invoices = new InvoiceAndMrrService({ webhooks: gwCtx.gateway.webhooks, dbPath });
 
+  const uiAuth = new UiAuthStore({
+    db: mandates.db,
+    cookieName: "fintech_sess_p4",
+    seedUsers: [
+      {
+        username: "billing.user",
+        password: process.env.P4_USER_PASSWORD ?? "MandUser#2026",
+        role: "user",
+        displayName: "Billing Viewer",
+      },
+      {
+        username: "billing.admin",
+        password: process.env.P4_ADMIN_PASSWORD ?? "MandAdmin#2026",
+        role: "admin",
+        displayName: "Billing Admin",
+      },
+    ],
+  });
+
   return {
     clock,
+    uiAuth,
     mandates,
     subs,
     executor,

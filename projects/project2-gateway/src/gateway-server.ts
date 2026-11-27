@@ -27,21 +27,32 @@ export class GatewayHttpServer {
   }
 
   private authenticate(req: http.IncomingMessage, rawBody: string) {
+    const session = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+    if (session) {
+      return {
+        merchant: { id: this.ctx.seededMerchantId },
+        mode: "LIVE" as const,
+        uiRole: session.role,
+      };
+    }
     const keyId = String(req.headers["x-key-id"] ?? "").trim();
     const timestampIso = String(req.headers["x-timestamp"] ?? "").trim();
     const signature = String(req.headers["x-signature"] ?? "").trim();
     if (!keyId || !timestampIso || !signature) {
       throw Object.assign(
-        new Error("Unauthorized (HTTP 401): Missing X-Key-Id, X-Timestamp, or X-Signature"),
+        new Error(
+          "Unauthorized (HTTP 401): Missing session cookie or HMAC X-Key-Id/X-Timestamp/X-Signature"
+        ),
         { statusCode: 401 }
       );
     }
-    return this.ctx.gateway.authenticateMerchantRequest({
+    const res = this.ctx.gateway.authenticateMerchantRequest({
       keyId,
       rawBody,
       timestampIso,
       signature,
     });
+    return { ...res, uiRole: "admin" as const };
   }
 
   private assertOwnership(table: "orders" | "payments", id: string, merchantId: string): void {
@@ -114,6 +125,32 @@ export class GatewayHttpServer {
 
         const { rawBody, json } = await readRawAndJsonBody(req);
 
+        // UI Session Auth (scrypt hashed passwords in SQLite + HttpOnly cookie)
+        if (method === "GET" && pathname === "/api/auth/me") {
+          const user = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { authenticated: Boolean(user), user }, origin);
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/login") {
+          const out = this.ctx.uiAuth.login(
+            String(json.username ?? ""),
+            String(json.password ?? "")
+          );
+          if (!out) {
+            writeJsonResponse(res, 401, { error: "Invalid username or password" }, origin);
+            return;
+          }
+          writeJsonResponse(res, 200, { user: out.user }, origin, {
+            "set-cookie": out.setCookieHeader,
+          });
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/logout") {
+          const clearCookie = this.ctx.uiAuth.logoutFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { loggedOut: true }, origin, { "set-cookie": clearCookie });
+          return;
+        }
+
         if (method === "POST" && pathname === "/api/vault/tokenize") {
           const meta = this.ctx.gateway.vault.tokenize({
             cardNumber: String(json.cardNumber ?? ""),
@@ -167,10 +204,13 @@ export class GatewayHttpServer {
 
         const acqMatch = pathname.match(/^\/api\/acquirers\/([^/]+)\/chaos$/);
         if (method === "PUT" && acqMatch) {
-          if (auth.mode !== "LIVE") {
-            throw Object.assign(new Error("Forbidden (HTTP 403): LIVE key required"), {
-              statusCode: 403,
-            });
+          if (auth.mode !== "LIVE" || auth.uiRole !== "admin") {
+            throw Object.assign(
+              new Error("Forbidden (HTTP 403): Admin role required for acquirer chaos"),
+              {
+                statusCode: 403,
+              }
+            );
           }
           const id = decodeURIComponent(acqMatch[1]).toUpperCase();
           const map: Record<string, AcquirerSimulator> = {
@@ -285,8 +325,8 @@ export class GatewayHttpServer {
         }
 
         if (method === "PUT" && pathname === "/api/webhooks/demo-receiver") {
-          if (auth.mode !== "LIVE") {
-            throw Object.assign(new Error("Forbidden (HTTP 403): LIVE key required"), {
+          if (auth.mode !== "LIVE" || auth.uiRole !== "admin") {
+            throw Object.assign(new Error("Forbidden (HTTP 403): Admin role required"), {
               statusCode: 403,
             });
           }
@@ -314,6 +354,14 @@ export class GatewayHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/keys/rotate") {
+          if (auth.uiRole !== "admin") {
+            throw Object.assign(
+              new Error("Forbidden (HTTP 403): Admin role required to rotate API keys"),
+              {
+                statusCode: 403,
+              }
+            );
+          }
           const rotated = this.ctx.gateway.rotateApiKey({
             merchantId: auth.merchant.id,
             mode: auth.mode,

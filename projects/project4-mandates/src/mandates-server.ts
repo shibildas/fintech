@@ -27,14 +27,19 @@ export class MandatesHttpServer {
     this.ctx = ctx;
   }
 
-  private requireMerchantToken(req: http.IncomingMessage): void {
+  private requireMerchantAuth(req: http.IncomingMessage): { uiRole: "user" | "admin" } {
+    const session = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+    if (session) {
+      return { uiRole: session.role };
+    }
     const token = String(req.headers["x-merchant-token"] ?? "").trim();
     if (!timingSafeTokenEqual(token, this.ctx.merchantToken)) {
       throw Object.assign(
-        new Error("Unauthorized (HTTP 401): Missing or invalid X-Merchant-Token"),
+        new Error("Unauthorized (HTTP 401): Missing session cookie or X-Merchant-Token"),
         { statusCode: 401 }
       );
     }
+    return { uiRole: "admin" };
   }
 
   public createHttpServer(): http.Server {
@@ -71,7 +76,34 @@ export class MandatesHttpServer {
         }
 
         const { json } = await readRawAndJsonBody(req);
-        this.requireMerchantToken(req);
+
+        // UI Session Auth (scrypt hashed passwords in SQLite + HttpOnly cookie)
+        if (method === "GET" && pathname === "/api/auth/me") {
+          const user = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { authenticated: Boolean(user), user }, origin);
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/login") {
+          const out = this.ctx.uiAuth.login(
+            String(json.username ?? ""),
+            String(json.password ?? "")
+          );
+          if (!out) {
+            writeJsonResponse(res, 401, { error: "Invalid username or password" }, origin);
+            return;
+          }
+          writeJsonResponse(res, 200, { user: out.user }, origin, {
+            "set-cookie": out.setCookieHeader,
+          });
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/logout") {
+          const clearCookie = this.ctx.uiAuth.logoutFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { loggedOut: true }, origin, { "set-cookie": clearCookie });
+          return;
+        }
+
+        const auth = this.requireMerchantAuth(req);
 
         if (method === "GET" && pathname === "/api/clock") {
           const now = this.ctx.clock.now();
@@ -83,6 +115,12 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/clock/advance") {
+          if (auth.uiRole !== "admin") {
+            throw Object.assign(
+              new Error("Forbidden (HTTP 403): Admin role required to advance Fake Clock"),
+              { statusCode: 403 }
+            );
+          }
           if (json.setIso !== undefined) {
             const isoStr = String(json.setIso);
             if (Number.isNaN(Date.parse(isoStr))) {

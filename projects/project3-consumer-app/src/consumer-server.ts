@@ -33,6 +33,16 @@ export class ConsumerHttpServer {
   }
 
   private requireOpsToken(req: http.IncomingMessage): void {
+    const session = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+    if (session) {
+      if (session.role !== "admin") {
+        throw Object.assign(
+          new Error("Forbidden (HTTP 403): Admin role required for Risk, Disputes & Chaos"),
+          { statusCode: 403 }
+        );
+      }
+      return;
+    }
     const token = String(req.headers["x-ops-token"] ?? "").trim();
     if (!timingSafeTokenEqual(token, this.ctx.opsToken)) {
       throw Object.assign(new Error("Unauthorized (HTTP 401): Missing or invalid X-Ops-Token"), {
@@ -128,6 +138,32 @@ export class ConsumerHttpServer {
         }
 
         const { rawBody, json } = await readRawAndJsonBody(req);
+
+        // UI Session Auth (scrypt hashed passwords in SQLite + HttpOnly cookie)
+        if (method === "GET" && pathname === "/api/auth/me") {
+          const user = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { authenticated: Boolean(user), user }, origin);
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/login") {
+          const out = this.ctx.uiAuth.login(
+            String(json.username ?? ""),
+            String(json.password ?? "")
+          );
+          if (!out) {
+            writeJsonResponse(res, 401, { error: "Invalid username or password" }, origin);
+            return;
+          }
+          writeJsonResponse(res, 200, { user: out.user }, origin, {
+            "set-cookie": out.setCookieHeader,
+          });
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/logout") {
+          const clearCookie = this.ctx.uiAuth.logoutFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { loggedOut: true }, origin, { "set-cookie": clearCookie });
+          return;
+        }
 
         if (method === "POST" && pathname === "/api/signup") {
           const out = this.ctx.psp.signup({

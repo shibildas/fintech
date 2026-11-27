@@ -41,6 +41,7 @@ export function getAllowedCorsOrigin(requestOrigin?: string): string {
 export function buildCorsHeaders(requestOrigin?: string): Record<string, string> {
   return {
     "access-control-allow-origin": getAllowedCorsOrigin(requestOrigin),
+    "access-control-allow-credentials": "true",
     vary: "Origin",
     "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
     "access-control-allow-headers":
@@ -108,10 +109,14 @@ export function writeJsonResponse(
   res: http.ServerResponse,
   statusCode: number,
   body: unknown,
-  requestOrigin?: string
+  requestOrigin?: string,
+  extraHeaders?: Record<string, string | string[]>
 ): void {
   applyCorsHeaders(res, requestOrigin);
-  res.writeHead(statusCode, { "content-type": "application/json; charset=utf-8" });
+  res.writeHead(statusCode, {
+    "content-type": "application/json; charset=utf-8",
+    ...extraHeaders,
+  });
   res.end(JSON.stringify(body, null, 2));
 }
 

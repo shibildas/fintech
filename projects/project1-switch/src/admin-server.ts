@@ -6,6 +6,7 @@ import {
   maskAccountNumber,
   timingSafeTokenEqual,
   readRawAndJsonBody,
+  UiAuthStore,
 } from "../../../packages/core/src/index.ts";
 import { renderSwitchAdminHtml } from "./admin-ui.ts";
 import { CentralSwitch } from "./switch-engine.ts";
@@ -50,6 +51,7 @@ export class SwitchAdminApp {
     { total: number; success: number; error: number }
   >();
   public readonly structuredLogs: Array<Record<string, unknown>> = [];
+  public readonly uiAuth: UiAuthStore;
   private readonly adminToken?: string;
 
   constructor(params: {
@@ -62,15 +64,47 @@ export class SwitchAdminApp {
     this.adminToken = params.adminToken;
     this.settlement = new SettlementEngine(this.sw.db, this.sw.audit);
     this.reconciliation = new ReconciliationEngine(this.sw.db, this.sw.audit);
+    this.uiAuth = new UiAuthStore({
+      db: this.sw.db,
+      cookieName: "fintech_sess_p1",
+      seedUsers: [
+        {
+          username: "switch.ops",
+          password: process.env.P1_USER_PASSWORD ?? "SwitchUser#2026",
+          role: "user",
+          displayName: "Switch Operator",
+        },
+        {
+          username: "switch.admin",
+          password: process.env.P1_ADMIN_PASSWORD ?? "SwitchAdmin#2026",
+          role: "admin",
+          displayName: "Switch Admin",
+        },
+      ],
+    });
   }
 
   /**
-   * Common Rule 11: Enforces Role-Based Access Control (RBAC) + optional strict `X-Admin-Token`.
+   * Common Rule 11: Enforces RBAC via either HttpOnly UI session cookie or strict `X-Admin-Token`.
    */
   private requireRole(
     headers: Record<string, string | undefined>,
     minimumRole: ConsoleRole
   ): { actorId: string; role: ConsoleRole } {
+    const session = this.uiAuth.getSessionFromHeaders(headers);
+    if (session) {
+      const mappedRole: ConsoleRole = session.role === "admin" ? "admin" : "operator";
+      if (minimumRole === "admin" && mappedRole !== "admin") {
+        throw Object.assign(
+          new Error(
+            "Rule 11 RBAC Violation (HTTP 403): Admin role required to modify configuration or chaos rules"
+          ),
+          { statusCode: 403 }
+        );
+      }
+      return { actorId: session.username, role: mappedRole };
+    }
+
     if (this.adminToken) {
       const providedToken = headers["x-admin-token"] ?? headers["X-Admin-Token"];
       if (!timingSafeTokenEqual(providedToken, this.adminToken)) {
@@ -159,6 +193,32 @@ export class SwitchAdminApp {
         statusCode: 204,
         headers: buildCorsHeaders(headers["origin"] ?? headers["Origin"]),
         body: "",
+      };
+    }
+
+    // UI Session Auth (scrypt hashed passwords in SQLite + HttpOnly cookie)
+    if (method === "GET" && pathname === "/api/auth/me") {
+      const user = this.uiAuth.getSessionFromHeaders(headers);
+      return this.json(200, { authenticated: Boolean(user), user });
+    }
+    if (method === "POST" && pathname === "/api/auth/login") {
+      const p = (body ?? {}) as { username?: string; password?: string };
+      const out = this.uiAuth.login(String(p.username ?? ""), String(p.password ?? ""));
+      if (!out) {
+        return this.json(401, { error: "Invalid username or password" });
+      }
+      return {
+        statusCode: 200,
+        headers: { "content-type": "application/json", "set-cookie": out.setCookieHeader },
+        body: { user: out.user },
+      };
+    }
+    if (method === "POST" && pathname === "/api/auth/logout") {
+      const clearCookie = this.uiAuth.logoutFromHeaders(headers);
+      return {
+        statusCode: 200,
+        headers: { "content-type": "application/json", "set-cookie": clearCookie },
+        body: { loggedOut: true },
       };
     }
 
