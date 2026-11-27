@@ -179,6 +179,8 @@ export function renderFintechShellHtml(params: {
     label { display: flex; flex-direction: column; font-size: 12px; font-weight: 500; color: var(--ink-2); gap: 5px; flex: 1; min-width: 140px; }
     input, select { background: var(--surface); color: var(--ink); border: 1px solid var(--border-strong); border-radius: 8px; padding: 9px 11px; font-size: 13.5px; }
     input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14); }
+    input.input-invalid, select.input-invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12); }
+    .field-err { font-size: 11px; color: var(--err-ink); font-weight: 500; margin-top: 2px; }
     button { background: var(--primary); color: #ffffff; border: 1px solid transparent; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: background 140ms ease, opacity 140ms ease; white-space: nowrap; }
     button:hover:not(:disabled) { background: var(--primary-hover); }
     button:disabled { opacity: 0.6; cursor: wait; }
@@ -308,6 +310,61 @@ export function renderFintechShellHtml(params: {
     function esc(s) {
       return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
     }
+    function clearFieldErrors(ids) {
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.classList.remove("input-invalid");
+        const next = el.parentElement?.querySelector(".field-err");
+        if (next) next.remove();
+      }
+    }
+    function setFieldError(id, msg) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add("input-invalid");
+      let err = el.parentElement?.querySelector(".field-err");
+      if (!err) {
+        err = document.createElement("span");
+        err.className = "field-err";
+        el.parentElement?.appendChild(err);
+      }
+      err.textContent = msg;
+      el.addEventListener("input", () => clearFieldErrors([id]), { once: true });
+    }
+    function validateFields(rules) {
+      clearFieldErrors(rules.map(r => r.id));
+      let firstBad = null;
+      for (const r of rules) {
+        const el = document.getElementById(r.id);
+        const val = el ? el.value.trim() : "";
+        const err = r.check(val);
+        if (err) {
+          setFieldError(r.id, err);
+          if (!firstBad) firstBad = el;
+        }
+      }
+      if (firstBad) {
+        firstBad.focus();
+        toast("Please fix the highlighted fields", "err");
+        return false;
+      }
+      return true;
+    }
+    const V = {
+      vpa: v => /^[a-z0-9._-]{2,64}@[a-z0-9]{2,32}$/i.test(v) ? "" : "Valid VPA required (e.g. anita@psp1)",
+      posInt: v => (/^\\d+$/.test(v) && Number(v) > 0) ? "" : "Must be a positive integer in paise",
+      pin: v => /^\\d{4,6}$/.test(v) ? "" : "Must be 4–6 numeric digits",
+      mobile: v => /^[6-9]\\d{9}$/.test(v.replace(/[\\s-]/g, "")) ? "" : "10-digit mobile starting with 6–9",
+      nonEmpty: v => v.length > 0 ? "" : "This field is required",
+      luhn: v => {
+        const d = v.replace(/[\\s-]/g, "");
+        if (!/^\\d{13,19}$/.test(d)) return "Card must be 13–19 digits";
+        let sum = 0, dbl = false;
+        for (let i = d.length - 1; i >= 0; i--) { let n = Number(d[i]); if (dbl) { n *= 2; if (n > 9) n -= 9; } sum += n; dbl = !dbl; }
+        return sum % 10 === 0 ? "" : "Invalid card number (Luhn check failed)";
+      }
+    };
     function toast(message, kind = "info") {
       const root = document.getElementById("toast-root");
       if (!root) return;
@@ -375,6 +432,10 @@ export function renderFintechShellHtml(params: {
     }
     async function handleUiLogin(e) {
       e.preventDefault();
+      if (!validateFields([
+        { id: "loginUser", check: v => /^[a-z0-9._-]{3,64}$/i.test(v) ? "" : "Username must be 3–64 characters" },
+        { id: "loginPass", check: v => v.length >= 8 ? "" : "Password must be at least 8 characters" }
+      ])) return;
       const btn = document.getElementById("loginBtn");
       const errEl = document.getElementById("loginErr");
       errEl.classList.add("hidden");

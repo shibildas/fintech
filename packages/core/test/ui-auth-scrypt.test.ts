@@ -47,8 +47,9 @@ describe("UI Session Auth — Salted scrypt Password Hashing & HttpOnly Session 
     assert.equal(verifyPasswordScrypt("SamePass#123", h1), true);
     assert.equal(verifyPasswordScrypt("WrongPass", h1), false);
 
-    // 3. Invalid password rejected; valid login issues HttpOnly cookie & hashed DB session
-    assert.equal(store.login("demo.user", "wrong"), null);
+    // 3. Malformed password throws 400; wrong password returns null; valid login issues HttpOnly cookie & hashed DB session
+    assert.throws(() => store.login("demo.user", "short"), { statusCode: 400 });
+    assert.equal(store.login("demo.user", "WrongPass#2026"), null);
     const loginOut = store.login("demo.admin", "AdminPass#2026");
     assert.ok(loginOut);
     assert.equal(loginOut.user.role, "admin");

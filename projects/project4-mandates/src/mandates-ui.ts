@@ -143,8 +143,8 @@ export function renderMandatesUiHtml(): string {
         }
       }
       async function createAndAuthMandate(btn) {
+        if (!validateFields([{ id: "mCred", check: V.pin }])) return;
         const cred = document.getElementById("mCred").value.trim();
-        if (!cred) { toast("Enter PIN or OTP first", "err"); return; }
         const res = await runAction(btn, null, "Authorizing", async () => {
           const m1 = await fetch("/api/mandates", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ rail: document.getElementById("mRail").value }) });
           const mData = await m1.json();
@@ -236,7 +236,7 @@ export function renderMandatesUiHtml(): string {
       async function payNowRecover(btn) {
         if (!p4State.dunningCaseId) { toast("Trigger a soft failure first", "err"); return; }
         const res = await runAction(btn, null, "Recovering", async () => {
-          const r = await fetch("/api/dunning/" + encodeURIComponent(p4State.dunningCaseId) + "/pay-now", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cardNumber: "4111111111114242", expiry: "12/29" }) });
+          const r = await fetch("/api/dunning/" + encodeURIComponent(p4State.dunningCaseId) + "/pay-now", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cardNumber: "4242424242424242", expiry: "12/29" }) });
           return { status: r.status, body: await r.json(), toastLabel: "Pay-Now Recovery" };
         });
         if (res && res.status === 200) loadSavedState(null);

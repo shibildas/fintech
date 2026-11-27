@@ -5,6 +5,10 @@ import {
   readRawAndJsonBody,
   writeJsonResponse,
   writeHtmlResponse,
+  validateCardPanLuhn,
+  validatePositivePaise,
+  validateVpa,
+  validatePinOrOtp,
 } from "@fintech/core";
 import type { AcquirerSimulator } from "./acquirer-simulator.ts";
 import { runPciGrepTest } from "./token-vault.ts";
@@ -152,8 +156,9 @@ export class GatewayHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/vault/tokenize") {
+          const cardNumber = validateCardPanLuhn(json.cardNumber, "cardNumber");
           const meta = this.ctx.gateway.vault.tokenize({
-            cardNumber: String(json.cardNumber ?? ""),
+            cardNumber,
             expiry: String(json.expiry ?? "12/29"),
             merchantId: String(json.merchantId ?? this.ctx.seededMerchantId),
             customerReference: json.customerReference ? String(json.customerReference) : null,
@@ -165,11 +170,12 @@ export class GatewayHttpServer {
         const auth = this.authenticate(req, rawBody);
 
         if (method === "POST" && pathname === "/api/orders") {
+          const amountPaise = validatePositivePaise(json.amountPaise ?? 100_000, "amountPaise");
           const result = await this.ctx.gateway.createOrder({
             merchantId: auth.merchant.id,
             mode: auth.mode,
             idempotencyKey: String(json.idempotencyKey ?? `ord_${Date.now()}`),
-            amountPaise: Number(json.amountPaise ?? 100_000),
+            amountPaise,
             merchantOrderId: String(json.merchantOrderId ?? `rcpt_${Date.now()}`),
             customerReference: json.customerReference ? String(json.customerReference) : undefined,
           });
@@ -180,9 +186,16 @@ export class GatewayHttpServer {
         if (method === "POST" && pathname === "/api/payments") {
           const orderId = String(json.orderId ?? "");
           this.assertOwnership("orders", orderId, auth.merchant.id);
+          const payMethod = (json.method as "CARD" | "UPI" | "NETBANKING" | "WALLET") ?? "CARD";
+          if (payMethod === "UPI") {
+            validateVpa(json.upiPayerVpa, "upiPayerVpa");
+            validatePinOrOtp(json.upiRawPin, "upiRawPin");
+          } else if (payMethod === "CARD" && json.cardOtp !== undefined) {
+            validatePinOrOtp(json.cardOtp, "cardOtp");
+          }
           const resPay = await this.ctx.gateway.payOrder({
             orderId,
-            method: (json.method as "CARD" | "UPI" | "NETBANKING" | "WALLET") ?? "CARD",
+            method: payMethod,
             tokenId: json.tokenId ? String(json.tokenId) : undefined,
             cardOtp: json.cardOtp !== undefined ? String(json.cardOtp) : undefined,
             upiPayerVpa: json.upiPayerVpa ? String(json.upiPayerVpa) : undefined,
@@ -256,7 +269,7 @@ export class GatewayHttpServer {
             .map((s) => s.replace(/[\s-]/g, ""))
             .filter((s) => s.length >= 13);
           const rawPansUsed =
-            customPans.length > 0 ? customPans : ["4111111111114242", "5555555555554444"];
+            customPans.length > 0 ? customPans : ["4242424242424242", "5555555555554444"];
           const audit = runPciGrepTest({
             gatewayDb: this.ctx.gateway.gatewayDb,
             vaultDb: this.ctx.gateway.vault.vaultDb,

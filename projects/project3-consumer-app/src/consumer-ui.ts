@@ -144,6 +144,10 @@ export function renderConsumerUiHtml(): string {
         return { status: r.status, body: await r.json() };
       }
       async function doSignup(btn) {
+        if (!validateFields([
+          { id: "cMob", check: V.mobile },
+          { id: "cName", check: v => v.length >= 2 ? "" : "Full name must be at least 2 characters" }
+        ])) return;
         return runAction(btn, null, "Sending SMS OTP", async () => {
           const r = await fetch("/api/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mobileNumber: document.getElementById("cMob").value, fullName: document.getElementById("cName").value }) });
           const data = await r.json();
@@ -152,9 +156,13 @@ export function renderConsumerUiHtml(): string {
         });
       }
       async function doVerifyAndBind(btn) {
+        if (!validateFields([
+          { id: "cMob", check: V.mobile },
+          { id: "cOtp", check: V.pin },
+          { id: "cPin", check: V.pin }
+        ])) return;
         const otp = document.getElementById("cOtp").value.trim();
         const rawPin = document.getElementById("cPin").value.trim();
-        if (!otp || !rawPin) { toast("Enter SMS OTP and UPI PIN", "err"); return; }
         const res = await runAction(btn, null, "Binding Ed25519", async () => {
           const vr = await fetch("/api/otp/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mobileNumber: document.getElementById("cMob").value, otp }) });
           const vData = await vr.json();

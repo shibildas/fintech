@@ -7,6 +7,9 @@ import {
   timingSafeTokenEqual,
   readRawAndJsonBody,
   UiAuthStore,
+  validateVpa,
+  validatePositivePaise,
+  validatePinOrOtp,
 } from "../../../packages/core/src/index.ts";
 import { renderSwitchAdminHtml } from "./admin-ui.ts";
 import { CentralSwitch } from "./switch-engine.ts";
@@ -252,20 +255,19 @@ export class SwitchAdminApp {
         rawPin?: string;
         transactionId?: string;
       };
-      const payerVpa = (p.payerVpa ?? "anita@psp1").toLowerCase();
+      const payerVpa = validateVpa(p.payerVpa ?? "anita@psp1", "payerVpa");
+      const payeeVpa = validateVpa(p.payeeVpa ?? "shop@psp2", "payeeVpa");
+      const amountPaise = validatePositivePaise(p.amountPaise ?? 10_000, "amountPaise");
+      const rawPin = validatePinOrOtp(p.rawPin, "rawPin");
       const psp = payerVpa.endsWith("@psp2") ? this.topology.psps.PSP2 : this.topology.psps.PSP1;
       const env = psp.createSignedRequestEnvelope({
         mti: "0200",
         processingCode: "PAY",
         transactionId: p.transactionId ?? `UI-TXN-${crypto.randomUUID().slice(0, 8)}`,
         payerVpa,
-        payeeVpa: (p.payeeVpa ?? "shop@psp2").toLowerCase(),
-        amountPaise: Number(p.amountPaise ?? 10_000),
+        payeeVpa,
+        amountPaise,
       });
-      const rawPin = typeof p.rawPin === "string" ? p.rawPin.trim() : "";
-      if (!rawPin) {
-        return this.json(400, { error: "rawPin is required for /api/pay-demo" });
-      }
       const result = await this.sw.handlePay({
         envelope: env,
         rawPin,

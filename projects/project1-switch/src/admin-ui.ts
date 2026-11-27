@@ -131,8 +131,13 @@ export function renderSwitchAdminHtml(activeCycleId: string): string {
         }
       }
       async function sendPay(btn) {
+        if (!validateFields([
+          { id: "payerVpa", check: V.vpa },
+          { id: "payeeVpa", check: V.vpa },
+          { id: "amountPaise", check: V.posInt },
+          { id: "rawPin", check: V.pin }
+        ])) return;
         const rawPin = document.getElementById("rawPin").value.trim();
-        if (!rawPin) { toast("Enter customer UPI PIN", "err"); return; }
         const res = await runAction(btn, null, "Executing 6-hop pay", async () => {
           const r = await fetch("/api/pay-demo", {
             method: "POST", headers: { "content-type": "application/json" },

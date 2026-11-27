@@ -6,6 +6,10 @@ import {
   timingSafeTokenEqual,
   writeJsonResponse,
   writeHtmlResponse,
+  validateAnchorDay,
+  validatePinOrOtp,
+  validatePositivePaise,
+  validateVpa,
 } from "@fintech/core";
 import type { MandateRail } from "./mandate-service.ts";
 import { renderMandatesUiHtml } from "./mandates-ui.ts";
@@ -160,18 +164,27 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/mandates") {
+          const payerVpa = validateVpa(json.payerVpa ?? "anita@psp1", "payerVpa");
+          const maxAmountPaise = validatePositivePaise(
+            json.maxAmountPaise ?? 100_000,
+            "maxAmountPaise"
+          );
+          const monthlyAggregateCapPaise = validatePositivePaise(
+            json.monthlyAggregateCapPaise ?? 300_000,
+            "monthlyAggregateCapPaise"
+          );
           writeJsonResponse(
             res,
             201,
             this.ctx.mandates.createMandate({
               merchantId: this.ctx.merchantId,
               customerId: String(json.customerId ?? "cust_anita"),
-              payerVpa: json.payerVpa ? String(json.payerVpa) : "anita@psp1",
+              payerVpa,
               bankId: String(json.bankId ?? "BANKA"),
               accountNumberMasked: String(json.accountNumberMasked ?? "XXXX4521"),
               rail: (json.rail as MandateRail) ?? "UPI_AUTOPAY",
-              maxAmountPaise: Number(json.maxAmountPaise ?? 100_000),
-              monthlyAggregateCapPaise: Number(json.monthlyAggregateCapPaise ?? 300_000),
+              maxAmountPaise,
+              monthlyAggregateCapPaise,
               validUntilIso: String(json.validUntilIso ?? "2029-12-31T00:00:00.000Z"),
               now: this.ctx.clock.now(),
             }),
@@ -182,12 +195,13 @@ export class MandatesHttpServer {
 
         const mAuth = pathname.match(/^\/api\/mandates\/([^/]+)\/authorize$/);
         if (method === "POST" && mAuth) {
+          const authCredential = validatePinOrOtp(json.authCredential, "authCredential");
           writeJsonResponse(
             res,
             200,
             this.ctx.mandates.authorizeMandate({
               mandateId: decodeURIComponent(mAuth[1]),
-              authCredential: String(json.authCredential ?? ""),
+              authCredential,
               now: this.ctx.clock.now(),
             }),
             origin
@@ -242,6 +256,7 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/plans") {
+          const amountPaise = validatePositivePaise(json.amountPaise ?? 49_900, "amountPaise");
           writeJsonResponse(
             res,
             201,
@@ -249,7 +264,7 @@ export class MandatesHttpServer {
               merchantId: this.ctx.merchantId,
               name: String(json.name ?? "SaaS Pro Monthly"),
               interval: (json.interval as "MONTHLY" | "YEARLY") ?? "MONTHLY",
-              amountPaise: Number(json.amountPaise ?? 49_900),
+              amountPaise,
             }),
             origin
           );
@@ -267,12 +282,13 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/subscriptions") {
+          const anchorDay = validateAnchorDay(json.anchorDay ?? 31);
           const sub = this.ctx.subs.createSubscription({
             merchantId: this.ctx.merchantId,
             customerId: String(json.customerId ?? "cust_anita"),
             planId: String(json.planId ?? ""),
             mandateId: String(json.mandateId ?? ""),
-            anchorDay: json.anchorDay ? Number(json.anchorDay) : 31,
+            anchorDay,
             startYear: json.startYear ? Number(json.startYear) : 2026,
             startMonth1Based: json.startMonth1Based ? Number(json.startMonth1Based) : 1,
           });

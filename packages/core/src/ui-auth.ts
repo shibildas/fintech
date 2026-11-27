@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type http from "node:http";
 import type { DatabaseSync } from "node:sqlite";
+import { validateUsername, validatePassword } from "./validators.ts";
 
 /**
  * Per-Service UI Authentication & Session Store
@@ -118,7 +119,8 @@ export class UiAuthStore {
     username: string,
     password: string
   ): { user: UiSessionUser; rawToken: string; setCookieHeader: string } | null {
-    const normalized = username.trim().toLowerCase();
+    const normalized = validateUsername(username);
+    validatePassword(password);
     const row = this.db
       .prepare(
         `SELECT username, password_hash, role, display_name FROM ui_users WHERE username = ?`

@@ -44,7 +44,7 @@ export function renderGatewayUiHtml(): string {
           <p class="hint">Card PANs are tokenized directly in <code>p2-vault.sqlite</code>; the Gateway only handles opaque tokens.</p>
           <div class="row">
             <label>Order Amount (paise)<input id="ordAmt" type="number" value="150000" /></label>
-            <label>Card PAN (Vault)<input id="cardPan" value="4111111111114242" /></label>
+            <label>Card PAN (Vault)<input id="cardPan" value="4242424242424242" /></label>
             <label>3DS OTP<input id="cardOtp" type="password" placeholder="Enter 3DS OTP (123456)" /></label>
           </div>
           <div class="row">
@@ -137,8 +137,12 @@ export function renderGatewayUiHtml(): string {
         }
       }
       async function runCardCheckout(btn) {
+        if (!validateFields([
+          { id: "ordAmt", check: V.posInt },
+          { id: "cardPan", check: V.luhn },
+          { id: "cardOtp", check: V.pin }
+        ])) return;
         const cardOtp = document.getElementById("cardOtp").value.trim();
-        if (!cardOtp) { toast("Enter 3DS OTP first", "err"); return; }
         const res = await runAction(btn, null, "Processing card", async () => {
           const ord = await api("POST", "/api/orders", { amountPaise: Number(document.getElementById("ordAmt").value), idempotencyKey: "ui_ord_" + Date.now(), merchantOrderId: "rcpt_" + Date.now() });
           if (ord.status !== 201) return { ...ord, toastLabel: "Order" };
@@ -157,8 +161,12 @@ export function renderGatewayUiHtml(): string {
         }
       }
       async function runUpiCheckout(btn) {
+        if (!validateFields([
+          { id: "ordAmt", check: V.posInt },
+          { id: "upiVpa", check: V.vpa },
+          { id: "upiPin", check: V.pin }
+        ])) return;
         const upiRawPin = document.getElementById("upiPin").value.trim();
-        if (!upiRawPin) { toast("Enter UPI PIN first", "err"); return; }
         const res = await runAction(btn, null, "Processing UPI", async () => {
           const ord = await api("POST", "/api/orders", { amountPaise: Number(document.getElementById("ordAmt").value), idempotencyKey: "ui_upi_" + Date.now(), merchantOrderId: "rcpt_upi_" + Date.now() });
           if (ord.status !== 201) return { ...ord, toastLabel: "Order" };
