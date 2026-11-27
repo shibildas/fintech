@@ -67,8 +67,7 @@ export function aggregateMrrMovements(events: MrrMovementEvent[]): MrrMovementSu
     }
   }
 
-  const netMrrPaise =
-    newMrrPaise + expansionMrrPaise - contractionMrrPaise - churnedMrrPaise;
+  const netMrrPaise = newMrrPaise + expansionMrrPaise - contractionMrrPaise - churnedMrrPaise;
 
   return {
     newMrrPaise,

@@ -38,11 +38,7 @@ export class SlidingWindowDistinctCounter {
     }
   }
 
-  public recordAndCountDistinct(
-    actorId: string,
-    targetId: string,
-    nowMs = Date.now()
-  ): number {
+  public recordAndCountDistinct(actorId: string, targetId: string, nowMs = Date.now()): number {
     this.evictExpired(actorId, nowMs);
 
     let queue = this.eventsByActor.get(actorId);

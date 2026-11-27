@@ -6,10 +6,7 @@ import {
   signServiceMessage,
   type Iso8583MessageEnvelope,
 } from "../../../packages/core/src/index.ts";
-import {
-  createSeededTopology,
-  CentralSwitch,
-} from "../src/index.ts";
+import { createSeededTopology, CentralSwitch } from "../src/index.ts";
 
 function setupSwitchWithSeededTopology() {
   const topology = createSeededTopology();
@@ -121,14 +118,8 @@ describe("Day 3 & 4 Switch Flow — 6-Hop Pay, 5x Concurrency, Timeouts (CHK), 0
     assert.equal(banks.BANKA.ledger.listPostingsByRrn(rrn).length, 2); // 1 debit journal
     assert.equal(banks.BANKC.ledger.listPostingsByRrn(rrn).length, 2); // 1 credit journal
 
-    assert.equal(
-      banks.BANKA.ledger.getBalance("987654324521").available_balance_paise,
-      850_000
-    );
-    assert.equal(
-      banks.BANKC.ledger.getBalance("765432103344").available_balance_paise,
-      350_000
-    );
+    assert.equal(banks.BANKA.ledger.getBalance("987654324521").available_balance_paise, 850_000);
+    assert.equal(banks.BANKC.ledger.getBalance("765432103344").available_balance_paise, 350_000);
   });
 
   it("Acceptance Tests 3, 4 & Req 3: Unknown VPA returns 14, Insufficient Funds returns 51, 3 Wrong PINs return 55 and freeze account", async () => {
@@ -225,14 +216,8 @@ describe("Day 3 & 4 Switch Flow — 6-Hop Pay, 5x Concurrency, Timeouts (CHK), 0
     ]);
 
     // Exactly 1 debit at BANKA and 1 credit at BANKC
-    assert.equal(
-      banks.BANKA.ledger.getBalance("987654324521").available_balance_paise,
-      850_000
-    );
-    assert.equal(
-      banks.BANKC.ledger.getBalance("765432103344").available_balance_paise,
-      350_000
-    );
+    assert.equal(banks.BANKA.ledger.getBalance("987654324521").available_balance_paise, 850_000);
+    assert.equal(banks.BANKC.ledger.getBalance("765432103344").available_balance_paise, 350_000);
   });
 
   it("Acceptance Test 6 & Req 9: Beneficiary bank down -> credit retries fail -> 0420 Reversal re-credits payer -> REVERSED + Deemed-Approved detection", async () => {
@@ -262,10 +247,7 @@ describe("Day 3 & 4 Switch Flow — 6-Hop Pay, 5x Concurrency, Timeouts (CHK), 0
     assert.equal(result.transaction.credit_retry_count, 2);
 
     // Payer's net balance is completely unchanged (₹10,000.00 = 1,000,000 paise)
-    assert.equal(
-      banks.BANKA.ledger.getBalance("987654324521").available_balance_paise,
-      1_000_000
-    );
+    assert.equal(banks.BANKA.ledger.getBalance("987654324521").available_balance_paise, 1_000_000);
 
     // State history shows CREDIT_REQUESTED -> CREDIT_PENDING -> REVERSAL_REQUESTED -> REVERSED
     const states = sw.listStateHistoryByRrn(result.transaction.rrn).map((s) => s.to_state);

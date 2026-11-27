@@ -129,11 +129,10 @@ export class ConsumerPspBackend {
   /**
    * Step 1: Mobile signup + mock SMS OTP issuance.
    */
-  public signup(params: {
-    mobileNumber: string;
-    fullName: string;
-    now?: Date;
-  }): { customer: CustomerRecord; mockSmsOtp: string } {
+  public signup(params: { mobileNumber: string; fullName: string; now?: Date }): {
+    customer: CustomerRecord;
+    mockSmsOtp: string;
+  } {
     const cleanMobile = params.mobileNumber.trim();
     if (!/^\d{10}$/.test(cleanMobile)) {
       throw new Error(`Invalid 10-digit mobile number "${params.mobileNumber}"`);
@@ -208,9 +207,7 @@ export class ConsumerPspBackend {
     if (customer.active_device_id && customer.active_device_id !== params.deviceId) {
       retiredPreviousDeviceId = customer.active_device_id;
       this.db
-        .prepare(
-          `UPDATE bound_devices SET status = 'RETIRED', retired_at = ? WHERE device_id = ?`
-        )
+        .prepare(`UPDATE bound_devices SET status = 'RETIRED', retired_at = ? WHERE device_id = ?`)
         .run(nowIso, retiredPreviousDeviceId);
 
       // 2nd-device takeover triggers 24-hour cooling cap
@@ -229,13 +226,7 @@ export class ConsumerPspBackend {
           bound_at = excluded.bound_at,
           retired_at = NULL`
       )
-      .run(
-        params.deviceId,
-        params.customerId,
-        params.publicKeyPem,
-        params.deviceModel,
-        nowIso
-      );
+      .run(params.deviceId, params.customerId, params.publicKeyPem, params.deviceModel, nowIso);
 
     this.db
       .prepare(
@@ -331,9 +322,7 @@ export class ConsumerPspBackend {
     const inCooling = now.getTime() < Date.parse(customer.new_device_cooling_until);
     if (inCooling && amountPaise > NEW_DEVICE_COOLING_CAP_PAISE) {
       throw Object.assign(
-        new Error(
-          `24h new-device cooling cap: max ₹${NEW_DEVICE_COOLING_CAP_PAISE / 100} allowed`
-        ),
+        new Error(`24h new-device cooling cap: max ₹${NEW_DEVICE_COOLING_CAP_PAISE / 100} allowed`),
         { statusCode: 403 }
       );
     }
@@ -351,10 +340,7 @@ export class ConsumerPspBackend {
       throw new Error("UPI PIN must be 4 to 6 digits");
     }
     const salt = crypto.randomBytes(16).toString("hex");
-    const hash = crypto
-      .createHash("sha256")
-      .update(`${salt}:${rawPin}`)
-      .digest("hex");
+    const hash = crypto.createHash("sha256").update(`${salt}:${rawPin}`).digest("hex");
 
     this.db
       .prepare(
@@ -400,14 +386,10 @@ export class ConsumerPspBackend {
       throw new Error("Customer PIN is not set");
     }
 
-    if (
-      customer.pin_locked_until &&
-      now.getTime() < Date.parse(customer.pin_locked_until)
-    ) {
-      throw Object.assign(
-        new Error(`PIN is locked until ${customer.pin_locked_until}`),
-        { statusCode: 423 }
-      );
+    if (customer.pin_locked_until && now.getTime() < Date.parse(customer.pin_locked_until)) {
+      throw Object.assign(new Error(`PIN is locked until ${customer.pin_locked_until}`), {
+        statusCode: 423,
+      });
     }
 
     const expectedProof = crypto
@@ -418,8 +400,7 @@ export class ConsumerPspBackend {
     const providedBuf = Buffer.from(params.clientProofHex, "hex");
     const expectedBuf = Buffer.from(expectedProof, "hex");
     const matches =
-      providedBuf.length === expectedBuf.length &&
-      crypto.timingSafeEqual(providedBuf, expectedBuf);
+      providedBuf.length === expectedBuf.length && crypto.timingSafeEqual(providedBuf, expectedBuf);
 
     if (matches) {
       this.db
@@ -437,9 +418,7 @@ export class ConsumerPspBackend {
     }
 
     this.db
-      .prepare(
-        `UPDATE customers SET failed_pin_attempts = ?, pin_locked_until = ? WHERE id = ?`
-      )
+      .prepare(`UPDATE customers SET failed_pin_attempts = ?, pin_locked_until = ? WHERE id = ?`)
       .run(nextStrikes, lockedUntilIso, customer.id);
 
     if (lockedUntilIso) {
@@ -458,9 +437,7 @@ export class ConsumerPspBackend {
 
   public opsUnlockPin(customerId: string, actorId = "ops-admin", now = new Date()): void {
     this.db
-      .prepare(
-        `UPDATE customers SET failed_pin_attempts = 0, pin_locked_until = NULL WHERE id = ?`
-      )
+      .prepare(`UPDATE customers SET failed_pin_attempts = 0, pin_locked_until = NULL WHERE id = ?`)
       .run(customerId);
     this.audit.record({
       actorId,
@@ -477,10 +454,7 @@ export class ConsumerPspBackend {
   /**
    * Step 4: Discover & link bank accounts from registered BankCoreSimulators.
    */
-  public discoverAccountsAtBank(params: {
-    bankId: string;
-    holderNameQuery: string;
-  }): Array<{
+  public discoverAccountsAtBank(params: { bankId: string; holderNameQuery: string }): Array<{
     bankId: string;
     bankName: string;
     branchCode: string;
@@ -524,9 +498,7 @@ export class ConsumerPspBackend {
     }
     const acct = bank.db
       .prepare(`SELECT account_number, holder_name FROM accounts WHERE account_number = ?`)
-      .get(params.accountNumber) as
-      | { account_number: string; holder_name: string }
-      | undefined;
+      .get(params.accountNumber) as { account_number: string; holder_name: string } | undefined;
 
     if (!acct) {
       throw new Error(`Account "${params.accountNumber}" not found at bank "${params.bankId}"`);
@@ -538,8 +510,7 @@ export class ConsumerPspBackend {
          WHERE customer_id = ? AND bank_id = ? AND account_number = ?`
       )
       .get(params.customerId, bank.config.bankId, acct.account_number) as unknown as
-      | LinkedBankAccountRecord
-      | undefined;
+      LinkedBankAccountRecord | undefined;
     if (existing) {
       return existing;
     }
@@ -580,9 +551,8 @@ export class ConsumerPspBackend {
   }
 
   public getCustomer(customerId: string): CustomerRecord | undefined {
-    return this.db
-      .prepare(`SELECT * FROM customers WHERE id = ?`)
-      .get(customerId) as unknown as CustomerRecord | undefined;
+    return this.db.prepare(`SELECT * FROM customers WHERE id = ?`).get(customerId) as unknown as
+      CustomerRecord | undefined;
   }
 
   public getCustomerByMobile(mobileNumber: string): CustomerRecord | undefined {

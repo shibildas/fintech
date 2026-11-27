@@ -9,11 +9,7 @@ import {
   threeWaySortedMergeJoin,
   type SortedReconInputRow,
 } from "../../../packages/core/src/index.ts";
-import {
-  createSeededTopology,
-  CentralSwitch,
-  SwitchAdminApp,
-} from "../src/index.ts";
+import { createSeededTopology, CentralSwitch, SwitchAdminApp } from "../src/index.ts";
 
 describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RBAC & 100+ TPS Load Benchmark", () => {
   it("Acceptance Test 9 & Reqs 21–24: Classifies MISSING_AT_BENEFICIARY, AMOUNT_MISMATCH, MISSING_AT_REMITTER, MISSING_AT_SWITCH, STATUS_MISMATCH and resolves by posting credit with exception reference", async () => {
@@ -124,9 +120,7 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
     assert.equal(shopBalanceAfter - shopBalanceBefore, 10_000);
 
     const postingsForRrn0 = topology.banks.BANKC.ledger.listPostingsByRrn(rrns[0]!);
-    const exceptionPostings = postingsForRrn0.filter(
-      (p) => p.exception_id === missingAtBeneExc.id
-    );
+    const exceptionPostings = postingsForRrn0.filter((p) => p.exception_id === missingAtBeneExc.id);
     assert.equal(exceptionPostings.length, 2); // Double-entry DEBIT + CREDIT referencing the exception!
   });
 
@@ -202,10 +196,7 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
     const payRouteMetrics = metrics.routes["POST /pay"];
     assert.ok(payRouteMetrics, "Expected POST /pay route metrics to be recorded");
 
-    assert.ok(
-      sustainedTps >= 100,
-      `Expected >= 100 TPS on laptop, achieved ${sustainedTps} TPS`
-    );
+    assert.ok(sustainedTps >= 100, `Expected >= 100 TPS on laptop, achieved ${sustainedTps} TPS`);
     assert.ok(
       payRouteMetrics.p95_latency_ms < 1000,
       `Expected p95 < 1000ms, achieved ${payRouteMetrics.p95_latency_ms}ms`
@@ -231,9 +222,7 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
       process.env.UPDATE_SAMPLES === "true" ||
       !fs.existsSync(path.join(samplesDir, `manifest_${cycleId}_v1.csv`));
 
-    const settlementData = settleRes.body as ReturnType<
-      typeof app.settlement.runSettlementCycle
-    >;
+    const settlementData = settleRes.body as ReturnType<typeof app.settlement.runSettlementCycle>;
     assert.ok(settlementData.files.length >= 4);
 
     const reconData = reconRes.body as ReturnType<
@@ -279,11 +268,7 @@ describe("Day 6 & 7 — Three-Way Reconciliation, Exception Resolution, Admin RB
       { rrn: "631200000001", amountPaise: 1000, status: "SUCCESS" }, // 0002 missing at Beneficiary
     ];
 
-    const joined = threeWaySortedMergeJoin(
-      switchSorted,
-      remitterSorted,
-      beneficiarySorted
-    );
+    const joined = threeWaySortedMergeJoin(switchSorted, remitterSorted, beneficiarySorted);
     assert.equal(joined.length, 3);
     assert.equal(joined[0]!.rrn, "631200000001");
     assert.ok(joined[0]!.switchRow && joined[0]!.remitterRow && joined[0]!.beneficiaryRow);

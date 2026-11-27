@@ -193,11 +193,7 @@ export class CollectRequestEngine {
         `INSERT OR IGNORE INTO collect_blocklist (payer_vpa, blocked_requester_vpa, created_at)
          VALUES (?, ?, ?)`
       )
-      .run(
-        payerVpa.trim().toLowerCase(),
-        requesterVpa.trim().toLowerCase(),
-        now.toISOString()
-      );
+      .run(payerVpa.trim().toLowerCase(), requesterVpa.trim().toLowerCase(), now.toISOString());
   }
 
   public createCollectRequest(params: {
@@ -223,32 +219,24 @@ export class CollectRequestEngine {
 
     // 1. Payer blocklist check
     const blocked = this.pspBackend.db
-      .prepare(
-        `SELECT 1 FROM collect_blocklist WHERE payer_vpa = ? AND blocked_requester_vpa = ?`
-      )
+      .prepare(`SELECT 1 FROM collect_blocklist WHERE payer_vpa = ? AND blocked_requester_vpa = ?`)
       .get(payer, requester);
     if (blocked) {
-      throw Object.assign(
-        new Error(`Requester "${requester}" is blocked by "${payer}"`),
-        { statusCode: 403 }
-      );
+      throw Object.assign(new Error(`Requester "${requester}" is blocked by "${payer}"`), {
+        statusCode: 403,
+      });
     }
 
     // 2. Per-payer collect rate limit
     const rateRes = this.perPayerLimiter.tryConsume(`${requester}->${payer}`, 1, nowMs);
     if (!rateRes.allowed) {
-      throw Object.assign(
-        new Error(`Collect spam rate limit exceeded for "${payer}"`),
-        { statusCode: 429 }
-      );
+      throw Object.assign(new Error(`Collect spam rate limit exceeded for "${payer}"`), {
+        statusCode: 429,
+      });
     }
 
     // 3. Fan-out abuse detection (distinct payers targeted in 1 hour)
-    const distinctTargets = this.fanOutCounter.recordAndCountDistinct(
-      requester,
-      payer,
-      nowMs
-    );
+    const distinctTargets = this.fanOutCounter.recordAndCountDistinct(requester, payer, nowMs);
     if (distinctTargets >= this.fanOutThreshold) {
       this.pspBackend.audit.record({
         actorId: requester,

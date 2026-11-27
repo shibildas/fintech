@@ -1,9 +1,6 @@
 import crypto from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import {
-  signServiceMessage,
-  verifyServiceMessage,
-} from "../../../packages/core/src/index.ts";
+import { signServiceMessage, verifyServiceMessage } from "../../../packages/core/src/index.ts";
 
 /**
  * Project 2 — At-Least-Once Signed Webhooks Worker & Demo Store Receiver
@@ -116,10 +113,7 @@ export class WebhookDeliveryWorker {
     `);
   }
 
-  public registerMockHttpTarget(
-    url: string,
-    handler: SimulatedWebhookHttpHandler
-  ): void {
+  public registerMockHttpTarget(url: string, handler: SimulatedWebhookHttpHandler): void {
     this.customHandlers.set(url, handler);
   }
 
@@ -134,8 +128,7 @@ export class WebhookDeliveryWorker {
     now?: Date;
   }): WebhookEndpointRecord {
     const id = `wh_ep_${crypto.randomUUID().slice(0, 8)}`;
-    const secret =
-      params.secret ?? `whsec_${crypto.randomBytes(16).toString("hex")}`;
+    const secret = params.secret ?? `whsec_${crypto.randomBytes(16).toString("hex")}`;
     const nowIso = (params.now ?? new Date()).toISOString();
 
     this.db
@@ -144,22 +137,13 @@ export class WebhookDeliveryWorker {
           id, merchant_id, url, secret, events_json, state, first_failing_at, created_at
         ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', NULL, ?)`
       )
-      .run(
-        id,
-        params.merchantId,
-        params.url,
-        secret,
-        JSON.stringify(params.events),
-        nowIso
-      );
+      .run(id, params.merchantId, params.url, secret, JSON.stringify(params.events), nowIso);
 
     return this.getEndpoint(id)!;
   }
 
   public getEndpoint(endpointId: string): WebhookEndpointRecord | undefined {
-    const row = this.db
-      .prepare(`SELECT * FROM webhook_endpoints WHERE id = ?`)
-      .get(endpointId) as
+    const row = this.db.prepare(`SELECT * FROM webhook_endpoints WHERE id = ?`).get(endpointId) as
       | {
           id: string;
           merchant_id: string;
@@ -190,9 +174,7 @@ export class WebhookDeliveryWorker {
 
   public listMerchantEndpoints(merchantId: string): WebhookEndpointRecord[] {
     const rows = this.db
-      .prepare(
-        `SELECT id FROM webhook_endpoints WHERE merchant_id = ? ORDER BY created_at ASC`
-      )
+      .prepare(`SELECT id FROM webhook_endpoints WHERE merchant_id = ? ORDER BY created_at ASC`)
       .all(merchantId) as Array<{ id: string }>;
     return rows.map((r) => this.getEndpoint(r.id)!);
   }
@@ -277,15 +259,11 @@ export class WebhookDeliveryWorker {
     const attemptNumber = delivery.attempt + 1;
 
     // Re-sign with current timestamp so replay verification at receiver succeeds on retries
-    const freshSig = signServiceMessage(
-      delivery.payload_json,
-      nowIso,
-      endpoint.secret
-    );
+    const freshSig = signServiceMessage(delivery.payload_json, nowIso, endpoint.secret);
 
     const startMs = performance.now();
-    let statusCode = 500;
-    let responseSnippet = "";
+    let statusCode: number;
+    let responseSnippet: string;
 
     const handler = this.customHandlers.get(endpoint.url);
     if (handler) {
@@ -327,15 +305,7 @@ export class WebhookDeliveryWorker {
                updated_at = ?
            WHERE id = ?`
         )
-        .run(
-          attemptNumber,
-          freshSig,
-          statusCode,
-          durationMs,
-          responseSnippet,
-          nowIso,
-          deliveryId
-        );
+        .run(attemptNumber, freshSig, statusCode, durationMs, responseSnippet, nowIso, deliveryId);
 
       // Reset endpoint failing state on successful delivery
       if (endpoint.state === "FAILING" || endpoint.first_failing_at !== null) {
@@ -441,9 +411,7 @@ export class WebhookDeliveryWorker {
 
   public listDeliveriesForEndpoint(endpointId: string): WebhookDeliveryRecord[] {
     return this.db
-      .prepare(
-        `SELECT * FROM webhook_deliveries WHERE endpoint_id = ? ORDER BY created_at DESC`
-      )
+      .prepare(`SELECT * FROM webhook_deliveries WHERE endpoint_id = ? ORDER BY created_at DESC`)
       .all(endpointId) as unknown as WebhookDeliveryRecord[];
   }
 }
@@ -519,10 +487,7 @@ export class DemoStoreWebhookReceiver {
         replayed_duplicate: false,
       });
 
-      if (
-        parsed.event_type === "payment.captured" &&
-        typeof parsed.data?.order_id === "string"
-      ) {
+      if (parsed.event_type === "payment.captured" && typeof parsed.data?.order_id === "string") {
         this.paidMerchantOrderIds.add(parsed.data.order_id);
       }
 

@@ -17,10 +17,7 @@ import {
  */
 
 export type DisputeCategory =
-  | "DEBITED_NOT_CREDITED"
-  | "UNAUTHORIZED_TRANSACTION"
-  | "DUPLICATE_DEBIT"
-  | "MERCHANT_NON_DELIVERY";
+  "DEBITED_NOT_CREDITED" | "UNAUTHORIZED_TRANSACTION" | "DUPLICATE_DEBIT" | "MERCHANT_NON_DELIVERY";
 
 export const SLA_HOURS_BY_CATEGORY: Record<DisputeCategory, number> = {
   DEBITED_NOT_CREDITED: 24, // T+1 RBI TAT for failed UPI auto-reversals
@@ -210,9 +207,7 @@ export class ConsumerDisputeDesk {
     const now = params.now ?? new Date();
     const nowIso = now.toISOString();
     const openRows = this.db
-      .prepare(
-        `SELECT * FROM disputes WHERE switch_rrn = ? AND state IN ('OPEN', 'UNDER_REVIEW')`
-      )
+      .prepare(`SELECT * FROM disputes WHERE switch_rrn = ? AND state IN ('OPEN', 'UNDER_REVIEW')`)
       .all(params.switchRrn) as unknown as DisputeRecord[];
 
     const resolved: DisputeRecord[] = [];
@@ -303,9 +298,8 @@ export class ConsumerDisputeDesk {
   }
 
   public getDispute(disputeId: string): DisputeRecord | undefined {
-    return this.db
-      .prepare(`SELECT * FROM disputes WHERE id = ?`)
-      .get(disputeId) as unknown as DisputeRecord | undefined;
+    return this.db.prepare(`SELECT * FROM disputes WHERE id = ?`).get(disputeId) as unknown as
+      DisputeRecord | undefined;
   }
 
   private pushInboxNotification(params: {

@@ -206,7 +206,12 @@ describe("Day 15 — Project 3: Device Binding, Asymmetric Ed25519 Signing, PIN 
     const nowMs = 1_700_000_000_000;
 
     assert.equal(
-      guard.validateAndRecord({ deviceId: "dev1", timestampMs: nowMs, nonce: "nonce_aaa_111", nowMs }).valid,
+      guard.validateAndRecord({
+        deviceId: "dev1",
+        timestampMs: nowMs,
+        nonce: "nonce_aaa_111",
+        nowMs,
+      }).valid,
       true
     );
 

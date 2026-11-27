@@ -100,10 +100,7 @@ describe("Day 5 Settlement Engine — 200 Mixed Txns across 3 Banks, Zero-Sum Ne
     assert.equal(runV1.net_sum_across_banks_paise, 0);
 
     // Sum of net positions across all 3 banks must be 0
-    const manualNetSum = runV1.bank_positions.reduce(
-      (acc, b) => acc + b.net_paise,
-      0
-    );
+    const manualNetSum = runV1.bank_positions.reduce((acc, b) => acc + b.net_paise, 0);
     assert.equal(manualNetSum, 0);
 
     // 3 banks * 2 files (summary + detail) + 1 cycle manifest = 7 CSV files
@@ -112,11 +109,7 @@ describe("Day 5 Settlement Engine — 200 Mixed Txns across 3 Banks, Zero-Sum Ne
     // Verify every single CSV's HDR, TRL record_count, and SHA-256 body hash
     for (const file of runV1.files) {
       const check = verifySettlementCsvIntegrity(file.csv_content);
-      assert.equal(
-        check.valid,
-        true,
-        `CSV integrity check failed for ${file.filename}`
-      );
+      assert.equal(check.valid, true, `CSV integrity check failed for ${file.filename}`);
       assert.equal(check.recordCount, file.record_count);
       assert.equal(check.bodySha256, file.body_sha256);
     }
@@ -129,9 +122,7 @@ describe("Day 5 Settlement Engine — 200 Mixed Txns across 3 Banks, Zero-Sum Ne
     }, /Req 19 Violation/);
 
     assert.throws(() => {
-      sw.db
-        .prepare(`DELETE FROM settlement_files WHERE id = ?`)
-        .run(runV1.files[0].id);
+      sw.db.prepare(`DELETE FROM settlement_files WHERE id = ?`).run(runV1.files[0].id);
     }, /Req 19 Violation/);
 
     // Requirement 19: Re-running the cycle produces version 2 and keeps version 1

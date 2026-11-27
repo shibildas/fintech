@@ -183,10 +183,7 @@ export class InvoiceAndMrrService {
     return updated;
   }
 
-  public markInvoiceTerminal(
-    invoiceId: string,
-    toState: "VOID" | "UNCOLLECTIBLE"
-  ): InvoiceRecord {
+  public markInvoiceTerminal(invoiceId: string, toState: "VOID" | "UNCOLLECTIBLE"): InvoiceRecord {
     const inv = this.getInvoice(invoiceId);
     if (!inv) {
       throw new Error(`Invoice "${invoiceId}" not found`);
@@ -290,9 +287,8 @@ export class InvoiceAndMrrService {
   }
 
   public getInvoice(invoiceId: string): InvoiceRecord | undefined {
-    return this.db
-      .prepare(`SELECT * FROM invoices WHERE id = ?`)
-      .get(invoiceId) as unknown as InvoiceRecord | undefined;
+    return this.db.prepare(`SELECT * FROM invoices WHERE id = ?`).get(invoiceId) as unknown as
+      InvoiceRecord | undefined;
   }
 
   private assertTransition(from: InvoiceState, to: InvoiceState): void {

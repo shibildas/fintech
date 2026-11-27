@@ -1,10 +1,6 @@
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import {
-  evaluateRiskRuleAst,
-  validateRiskRuleAst,
-  type RiskRuleAstNode,
-} from "@fintech/core";
+import { evaluateRiskRuleAst, validateRiskRuleAst, type RiskRuleAstNode } from "@fintech/core";
 import type { RiskDecisionAction } from "./risk-engine.ts";
 
 /**
@@ -99,9 +95,7 @@ export class VersionedShadowRiskEngine {
       );
     `);
 
-    const saved = this.db
-      .prepare(`SELECT * FROM risk_rulesets`)
-      .all() as Array<{
+    const saved = this.db.prepare(`SELECT * FROM risk_rulesets`).all() as Array<{
       version: string;
       status: "ACTIVE" | "SHADOW" | "RETIRED";
       step_up_threshold: number;
@@ -303,10 +297,7 @@ export class VersionedShadowRiskEngine {
     };
   }
 
-  public generateShadowDiffReport(
-    activeVersion: string,
-    shadowVersion: string
-  ): ShadowDiffReport {
+  public generateShadowDiffReport(activeVersion: string, shadowVersion: string): ShadowDiffReport {
     const rows = this.db
       .prepare(
         `SELECT diff_label, COUNT(*) AS cnt
@@ -363,10 +354,7 @@ export class VersionedShadowRiskEngine {
     };
 
     for (const snap of snapshots) {
-      const features = JSON.parse(snap.features_json) as Record<
-        string,
-        number | string | boolean
-      >;
+      const features = JSON.parse(snap.features_json) as Record<string, number | string | boolean>;
       const res = this.evaluateWithRuleset(ruleset, features);
       counts[res.decision]++;
     }

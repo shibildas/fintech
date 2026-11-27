@@ -1,10 +1,6 @@
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import {
-  AuditLogger,
-  assertPositivePaise,
-  MandateAggregateCapChecker,
-} from "@fintech/core";
+import { AuditLogger, assertPositivePaise, MandateAggregateCapChecker } from "@fintech/core";
 
 /**
  * Project 4 (Day 22) — RBI Mandate Service (UPI AutoPay & e-NACH)
@@ -20,12 +16,7 @@ import {
 export type MandateRail = "UPI_AUTOPAY" | "E_NACH";
 
 export type MandateState =
-  | "CREATED"
-  | "ACTIVE"
-  | "PENDING_REAUTH"
-  | "PAUSED"
-  | "REVOKED"
-  | "EXPIRED";
+  "CREATED" | "ACTIVE" | "PENDING_REAUTH" | "PAUSED" | "REVOKED" | "EXPIRED";
 
 export interface MandateRecord {
   id: string;
@@ -309,10 +300,9 @@ export class MandateService {
       throw new Error(`Mandate "${params.mandateId}" not found`);
     }
     if (m.state !== "ACTIVE" || !m.umrn) {
-      throw Object.assign(
-        new Error(`Mandate "${m.id}" is "${m.state}" — debit rejected`),
-        { statusCode: 403 }
-      );
+      throw Object.assign(new Error(`Mandate "${m.id}" is "${m.state}" — debit rejected`), {
+        statusCode: 403,
+      });
     }
     if (now.getTime() > Date.parse(m.valid_until)) {
       this.db
@@ -349,7 +339,11 @@ export class MandateService {
     return m;
   }
 
-  public pauseMandate(mandateId: string, reason = "Customer paused", now = new Date()): MandateRecord {
+  public pauseMandate(
+    mandateId: string,
+    reason = "Customer paused",
+    now = new Date()
+  ): MandateRecord {
     return this.updateLifecycleState(mandateId, "PAUSED", reason, now);
   }
 
@@ -361,7 +355,11 @@ export class MandateService {
     return this.updateLifecycleState(mandateId, "ACTIVE", "Customer resumed", now);
   }
 
-  public revokeMandate(mandateId: string, reason = "Customer revoked", now = new Date()): MandateRecord {
+  public revokeMandate(
+    mandateId: string,
+    reason = "Customer revoked",
+    now = new Date()
+  ): MandateRecord {
     return this.updateLifecycleState(mandateId, "REVOKED", reason, now);
   }
 
@@ -403,8 +401,7 @@ export class MandateService {
   }
 
   public getMandate(mandateId: string): MandateRecord | undefined {
-    return this.db
-      .prepare(`SELECT * FROM mandates WHERE id = ?`)
-      .get(mandateId) as unknown as MandateRecord | undefined;
+    return this.db.prepare(`SELECT * FROM mandates WHERE id = ?`).get(mandateId) as unknown as
+      MandateRecord | undefined;
   }
 }

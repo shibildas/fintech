@@ -135,10 +135,7 @@ test("MerkleAuditTree generates O(log N) inclusion proofs and detects any tamper
 
   // Tampering with 1 paise in TXN2 must fail verification
   const proof2 = tree.getProof(2);
-  assert.equal(
-    MerkleAuditTree.verifyProof("POSTING|TXN2|DEBIT|25001", proof2, root),
-    false
-  );
+  assert.equal(MerkleAuditTree.verifyProof("POSTING|TXN2|DEBIT|25001", proof2, root), false);
 });
 
 test("HierarchicalPolicyTree computes pre-order MDR inheritance, post-order GMV rollup, BFS & LCA", () => {
@@ -214,14 +211,8 @@ test("HierarchicalPolicyTree computes pre-order MDR inheritance, post-order GMV 
   ]);
 
   // LCA
-  assert.equal(
-    tree.findLowestCommonAncestor("MERCH_A_UPI", "MERCH_A_CARD")?.id,
-    "MERCH_A"
-  );
-  assert.equal(
-    tree.findLowestCommonAncestor("MERCH_A_UPI", "MCC_TRAVEL")?.id,
-    "PLATFORM"
-  );
+  assert.equal(tree.findLowestCommonAncestor("MERCH_A_UPI", "MERCH_A_CARD")?.id, "MERCH_A");
+  assert.equal(tree.findLowestCommonAncestor("MERCH_A_UPI", "MCC_TRAVEL")?.id, "PLATFORM");
 });
 
 test("Iterative Binary Tree & BST traversals (Inorder, Preorder, Postorder, BFS, Validate, KthSmallest)", () => {

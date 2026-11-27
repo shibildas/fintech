@@ -18,10 +18,7 @@ import {
 } from "../../../packages/core/src/index.ts";
 import type { CentralSwitch, PspSimulator } from "../../project1-switch/src/index.ts";
 import { TokenVaultService } from "./token-vault.ts";
-import {
-  AcquirerSimulator,
-  type PaymentMethod,
-} from "./acquirer-simulator.ts";
+import { AcquirerSimulator, type PaymentMethod } from "./acquirer-simulator.ts";
 import { AcquirerRoutingEngine } from "./routing-engine.ts";
 import { WebhookDeliveryWorker } from "./webhook-worker.ts";
 
@@ -30,11 +27,7 @@ import { WebhookDeliveryWorker } from "./webhook-worker.ts";
  * (Requirements 1–29, Pages 13–17)
  */
 
-export type MerchantOnboardingState =
-  | "CREATED"
-  | "UNDER_REVIEW"
-  | "ACTIVE"
-  | "REJECTED";
+export type MerchantOnboardingState = "CREATED" | "UNDER_REVIEW" | "ACTIVE" | "REJECTED";
 
 export type CaptureMode = "AUTO" | "MANUAL";
 
@@ -209,11 +202,9 @@ export class PaymentGatewayEngine {
     this.gatewayDb = new DatabaseSync(params?.gatewayDbPath ?? ":memory:");
     this.audit = new AuditLogger(this.gatewayDb);
     this.idempotencyStore = new IdempotencyStore(this.gatewayDb);
-    this.adapterCredential =
-      params?.adapterCredential ?? "INTERNAL_ACQUIRER_ADAPTER_SECRET_KEY";
+    this.adapterCredential = params?.adapterCredential ?? "INTERNAL_ACQUIRER_ADAPTER_SECRET_KEY";
     this.vault =
-      params?.vault ??
-      new TokenVaultService({ adapterCredential: this.adapterCredential });
+      params?.vault ?? new TokenVaultService({ adapterCredential: this.adapterCredential });
     this.routing = new AcquirerRoutingEngine(this.gatewayDb, this.audit);
     this.webhooks = new WebhookDeliveryWorker(this.gatewayDb);
     this.upiSwitch = params?.upiSwitch;
@@ -497,9 +488,7 @@ export class PaymentGatewayEngine {
       throw new Error(`API key not found for merchant "${params.merchantId}"`);
     }
 
-    const newSecret = `sec_${params.mode.toLowerCase()}_${crypto
-      .randomBytes(16)
-      .toString("hex")}`;
+    const newSecret = `sec_${params.mode.toLowerCase()}_${crypto.randomBytes(16).toString("hex")}`;
 
     this.gatewayDb
       .prepare(
@@ -565,17 +554,14 @@ export class PaymentGatewayEngine {
       keyRow.active_secret,
       {
         nowMs,
-        previousSecret: overlapStillValid
-          ? keyRow.previous_secret ?? undefined
-          : undefined,
+        previousSecret: overlapStillValid ? (keyRow.previous_secret ?? undefined) : undefined,
       }
     );
 
     if (!verify.valid) {
-      throw Object.assign(
-        new Error(`Merchant API authentication failed: ${verify.reason}`),
-        { statusCode: 401 }
-      );
+      throw Object.assign(new Error(`Merchant API authentication failed: ${verify.reason}`), {
+        statusCode: 401,
+      });
     }
 
     const merchant = this.getMerchant(keyRow.merchant_id)!;
@@ -618,10 +604,9 @@ export class PaymentGatewayEngine {
       throw new Error(`Merchant "${params.merchantId}" not found`);
     }
     if (mode === "LIVE" && merchant.state !== "ACTIVE") {
-      throw Object.assign(
-        new Error(`Merchant "${merchant.id}" must be ACTIVE for LIVE orders`),
-        { statusCode: 403 }
-      );
+      throw Object.assign(new Error(`Merchant "${merchant.id}" must be ACTIVE for LIVE orders`), {
+        statusCode: 403,
+      });
     }
 
     const canonicalPayload = {
@@ -745,9 +730,7 @@ export class PaymentGatewayEngine {
 
     // Requirement 8: Check if unpaid order has expired
     if (order.state === "CREATED" && now.getTime() > Date.parse(order.expires_at)) {
-      this.gatewayDb
-        .prepare(`UPDATE orders SET state = 'EXPIRED' WHERE id = ?`)
-        .run(order.id);
+      this.gatewayDb.prepare(`UPDATE orders SET state = 'EXPIRED' WHERE id = ?`).run(order.id);
       throw Object.assign(new Error(`Order "${order.id}" has expired`), {
         statusCode: 410,
       });
@@ -755,10 +738,7 @@ export class PaymentGatewayEngine {
 
     const wasAlreadyPaid = order.state === "PAID";
     if (wasAlreadyPaid && !params.allowDuplicateOrderTest) {
-      throw Object.assign(
-        new Error(`Order "${order.id}" is already PAID`),
-        { statusCode: 409 }
-      );
+      throw Object.assign(new Error(`Order "${order.id}" is already PAID`), { statusCode: 409 });
     }
 
     const merchant = this.getMerchant(order.merchant_id)!;
@@ -812,8 +792,7 @@ export class PaymentGatewayEngine {
 
       const attemptId = `att_${crypto.randomUUID().slice(0, 10)}`;
       const isOk =
-        switchRes.transaction.state === "SUCCESS" &&
-        switchRes.envelope.response_code === "00";
+        switchRes.transaction.state === "SUCCESS" && switchRes.envelope.response_code === "00";
 
       const attempt: PaymentAttemptRecord = {
         id: attemptId,
@@ -839,7 +818,8 @@ export class PaymentGatewayEngine {
       }
     } else {
       // CARD, NETBANKING, or WALLET routed across the 3 Acquirer Simulators
-      let cardNetwork: undefined | ReturnType<TokenVaultService["getPublicTokenMetadata"]>["network"];
+      let cardNetwork:
+        undefined | ReturnType<TokenVaultService["getPublicTokenMetadata"]>["network"];
       let issuerBank: undefined | string;
 
       if (params.method === "CARD") {
@@ -849,10 +829,7 @@ export class PaymentGatewayEngine {
           );
         }
         // Verify merchant ownership and retrieve non-sensitive metadata (network, BIN6, issuerBank)
-        const tokenMeta = this.vault.getPublicTokenMetadata(
-          params.tokenId,
-          order.merchant_id
-        );
+        const tokenMeta = this.vault.getPublicTokenMetadata(params.tokenId, order.merchant_id);
         cardNetwork = tokenMeta.network;
         issuerBank = tokenMeta.issuer_bank;
 
@@ -959,13 +936,7 @@ export class PaymentGatewayEngine {
          SET acquirer_id = ?, acquirer_reference = ?, upi_switch_rrn = ?, updated_at = ?
          WHERE id = ?`
       )
-      .run(
-        succeededAcquirerId,
-        succeededAcquirerRef,
-        upiSwitchRrn,
-        nowIso,
-        paymentId
-      );
+      .run(succeededAcquirerId, succeededAcquirerRef, upiSwitchRrn, nowIso, paymentId);
 
     this.transitionPaymentState(paymentId, "AUTHORIZED", nowIso);
 
@@ -1020,10 +991,7 @@ export class PaymentGatewayEngine {
    * Transitions `AUTHORIZED -> CAPTURED`, marks the order `PAID`, posts the MDR/GST/Reserve/Payable
    * double-entry lines to the Merchant Ledger, and emits `payment.captured` webhook.
    */
-  public async capturePayment(params: {
-    paymentId: string;
-    now?: Date;
-  }): Promise<PaymentRecord> {
+  public async capturePayment(params: { paymentId: string; now?: Date }): Promise<PaymentRecord> {
     const now = params.now ?? new Date();
     const nowIso = now.toISOString();
     const payment = this.getPayment(params.paymentId);
@@ -1032,9 +1000,7 @@ export class PaymentGatewayEngine {
     }
 
     this.transitionPaymentState(payment.id, "CAPTURED", nowIso);
-    this.gatewayDb
-      .prepare(`UPDATE orders SET state = 'PAID' WHERE id = ?`)
-      .run(payment.order_id);
+    this.gatewayDb.prepare(`UPDATE orders SET state = 'PAID' WHERE id = ?`).run(payment.order_id);
 
     const merchant = this.getMerchant(payment.merchant_id)!;
     this.postCaptureToMerchantLedger(merchant, payment, nowIso);
@@ -1085,10 +1051,9 @@ export class PaymentGatewayEngine {
       payment.state !== "SETTLED" &&
       payment.state !== "PARTIALLY_REFUNDED"
     ) {
-      throw Object.assign(
-        new Error(`Cannot refund payment in state "${payment.state}"`),
-        { statusCode: 400 }
-      );
+      throw Object.assign(new Error(`Cannot refund payment in state "${payment.state}"`), {
+        statusCode: 400,
+      });
     }
 
     const canonicalPayload = {
@@ -1108,10 +1073,7 @@ export class PaymentGatewayEngine {
           requestPayload: canonicalPayload,
           handler: () => {
             const freshPay = this.getPayment(params.paymentId)!;
-            if (
-              freshPay.refunded_amount_paise + params.amountPaise >
-              freshPay.amount_paise
-            ) {
+            if (freshPay.refunded_amount_paise + params.amountPaise > freshPay.amount_paise) {
               throw Object.assign(
                 new Error(
                   `Acceptance Test 7 Violation (HTTP 422): Refund of ${params.amountPaise} paise exceeds remaining refundable balance (${
@@ -1141,25 +1103,20 @@ export class PaymentGatewayEngine {
               );
 
             let acqStatus: "PROCESSED" | "FAILED" = "PROCESSED";
-            let acqRef = `RFD-${crypto.randomUUID().slice(0, 8)}`;
+            const acqRef = `RFD-${crypto.randomUUID().slice(0, 8)}`;
 
             if (params.acquirerSim && params.acquirerSim.getChaos().forceRefundFail) {
               acqStatus = "FAILED";
             }
 
             this.gatewayDb
-              .prepare(
-                `UPDATE refunds SET state = ?, acquirer_reference = ? WHERE id = ?`
-              )
+              .prepare(`UPDATE refunds SET state = ?, acquirer_reference = ? WHERE id = ?`)
               .run(acqStatus, acqRef, refundId);
 
             if (acqStatus === "PROCESSED") {
-              const newRefundedTotal =
-                freshPay.refunded_amount_paise + params.amountPaise;
+              const newRefundedTotal = freshPay.refunded_amount_paise + params.amountPaise;
               const nextPayState: GatewayPaymentState =
-                newRefundedTotal === freshPay.amount_paise
-                  ? "REFUNDED"
-                  : "PARTIALLY_REFUNDED";
+                newRefundedTotal === freshPay.amount_paise ? "REFUNDED" : "PARTIALLY_REFUNDED";
 
               this.gatewayDb
                 .prepare(
@@ -1190,8 +1147,7 @@ export class PaymentGatewayEngine {
     if (!sf.coalescedOrReplayed) {
       await this.webhooks.publishEvent({
         merchantId: payment.merchant_id,
-        eventType:
-          sf.value.state === "PROCESSED" ? "refund.processed" : "refund.failed",
+        eventType: sf.value.state === "PROCESSED" ? "refund.processed" : "refund.failed",
         objectData: sf.value,
         now,
       });
@@ -1286,11 +1242,7 @@ export class PaymentGatewayEngine {
     nowIso: string
   ): void {
     const mdrBps = this.getMdrBpsForMethod(merchant.mdr_plan, payment.method);
-    const split = splitMdrAndGst(
-      payment.amount_paise,
-      mdrBps,
-      merchant.mdr_plan.gstBps
-    );
+    const split = splitMdrAndGst(payment.amount_paise, mdrBps, merchant.mdr_plan.gstBps);
 
     const reservePaise =
       merchant.rolling_reserve_bps > 0
@@ -1362,11 +1314,7 @@ export class PaymentGatewayEngine {
   ): void {
     if (merchant.mdr_plan.returnFeeOnRefund) {
       const mdrBps = this.getMdrBpsForMethod(merchant.mdr_plan, payment.method);
-      const split = splitMdrAndGst(
-        refundAmountPaise,
-        mdrBps,
-        merchant.mdr_plan.gstBps
-      );
+      const split = splitMdrAndGst(refundAmountPaise, mdrBps, merchant.mdr_plan.gstBps);
 
       const lines: Array<{
         accountType: GatewayLedgerAccountType;
@@ -1528,9 +1476,7 @@ export class PaymentGatewayEngine {
   private syncDashboardPayableCache(merchantId: string): void {
     const bal = this.getMerchantLedgerBalances(merchantId);
     this.gatewayDb
-      .prepare(
-        `UPDATE merchants SET dashboard_cached_payable_paise = ? WHERE id = ?`
-      )
+      .prepare(`UPDATE merchants SET dashboard_cached_payable_paise = ? WHERE id = ?`)
       .run(bal.payable_paise, merchantId);
   }
 
@@ -1545,9 +1491,7 @@ export class PaymentGatewayEngine {
     ledger_payable_paise: number;
   } {
     const row = this.gatewayDb
-      .prepare(
-        `SELECT dashboard_cached_payable_paise FROM merchants WHERE id = ?`
-      )
+      .prepare(`SELECT dashboard_cached_payable_paise FROM merchants WHERE id = ?`)
       .get(merchantId) as { dashboard_cached_payable_paise: number } | undefined;
 
     if (!row) {
@@ -1621,11 +1565,7 @@ export class PaymentGatewayEngine {
 
     for (const p of unsettledPayments) {
       const mdrBps = this.getMdrBpsForMethod(merchant.mdr_plan, p.method);
-      const split = splitMdrAndGst(
-        p.amount_paise,
-        mdrBps,
-        merchant.mdr_plan.gstBps
-      );
+      const split = splitMdrAndGst(p.amount_paise, mdrBps, merchant.mdr_plan.gstBps);
       grossTotal += split.grossPaise;
       feesTotal += split.mdrFeePaise;
       taxTotal += split.gstOnFeePaise;
@@ -1639,15 +1579,8 @@ export class PaymentGatewayEngine {
     for (const r of unsettledRefunds) {
       const parentPay = this.getPayment(r.payment_id)!;
       if (merchant.mdr_plan.returnFeeOnRefund) {
-        const mdrBps = this.getMdrBpsForMethod(
-          merchant.mdr_plan,
-          parentPay.method
-        );
-        const split = splitMdrAndGst(
-          r.amount_paise,
-          mdrBps,
-          merchant.mdr_plan.gstBps
-        );
+        const mdrBps = this.getMdrBpsForMethod(merchant.mdr_plan, parentPay.method);
+        const split = splitMdrAndGst(r.amount_paise, mdrBps, merchant.mdr_plan.gstBps);
         grossTotal -= split.grossPaise;
         feesTotal -= split.mdrFeePaise;
         taxTotal -= split.gstOnFeePaise;
@@ -1750,11 +1683,8 @@ export class PaymentGatewayEngine {
   }
 
   public getMerchant(merchantId: string): MerchantRecord | undefined {
-    const row = this.gatewayDb
-      .prepare(`SELECT * FROM merchants WHERE id = ?`)
-      .get(merchantId) as
-      | (Omit<MerchantRecord, "mdr_plan"> & { mdr_plan_json: string })
-      | undefined;
+    const row = this.gatewayDb.prepare(`SELECT * FROM merchants WHERE id = ?`).get(merchantId) as
+      (Omit<MerchantRecord, "mdr_plan"> & { mdr_plan_json: string }) | undefined;
 
     if (!row) {
       return undefined;
@@ -1779,9 +1709,8 @@ export class PaymentGatewayEngine {
   }
 
   public getOrder(orderId: string): OrderRecord | undefined {
-    return this.gatewayDb
-      .prepare(`SELECT * FROM orders WHERE id = ?`)
-      .get(orderId) as unknown as OrderRecord | undefined;
+    return this.gatewayDb.prepare(`SELECT * FROM orders WHERE id = ?`).get(orderId) as unknown as
+      OrderRecord | undefined;
   }
 
   public getPayment(paymentId: string): PaymentRecord | undefined {
@@ -1792,16 +1721,13 @@ export class PaymentGatewayEngine {
 
   public listPaymentAttempts(paymentId: string): PaymentAttemptRecord[] {
     return this.gatewayDb
-      .prepare(
-        `SELECT * FROM payment_attempts WHERE payment_id = ? ORDER BY attempt_number ASC`
-      )
+      .prepare(`SELECT * FROM payment_attempts WHERE payment_id = ? ORDER BY attempt_number ASC`)
       .all(paymentId) as unknown as PaymentAttemptRecord[];
   }
 
   public getRefund(refundId: string): RefundRecord | undefined {
-    return this.gatewayDb
-      .prepare(`SELECT * FROM refunds WHERE id = ?`)
-      .get(refundId) as unknown as RefundRecord | undefined;
+    return this.gatewayDb.prepare(`SELECT * FROM refunds WHERE id = ?`).get(refundId) as unknown as
+      RefundRecord | undefined;
   }
 
   private transitionPaymentState(
@@ -1813,12 +1739,7 @@ export class PaymentGatewayEngine {
     if (!current) {
       throw new Error(`Payment "${paymentId}" not found`);
     }
-    assertValidTransition(
-      "GatewayPayment",
-      GATEWAY_PAYMENT_TRANSITIONS,
-      current.state,
-      toState
-    );
+    assertValidTransition("GatewayPayment", GATEWAY_PAYMENT_TRANSITIONS, current.state, toState);
     this.gatewayDb
       .prepare(`UPDATE payments SET state = ?, updated_at = ? WHERE id = ?`)
       .run(toState, nowIso, paymentId);
@@ -1857,9 +1778,7 @@ export class PaymentGatewayEngine {
     nowIso: string
   ): string {
     const keyRow = this.gatewayDb
-      .prepare(
-        `SELECT active_secret FROM api_keys WHERE merchant_id = ? AND mode = 'LIVE'`
-      )
+      .prepare(`SELECT active_secret FROM api_keys WHERE merchant_id = ? AND mode = 'LIVE'`)
       .get(merchant.id) as { active_secret: string } | undefined;
     const secret = keyRow?.active_secret ?? "default_return_secret";
     const payload = `order_id=${orderId}&payment_id=${paymentId}&status=${status}`;

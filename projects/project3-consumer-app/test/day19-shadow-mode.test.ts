@@ -1,14 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  evaluateRiskRuleAst,
-  validateRiskRuleAst,
-  type RiskRuleAstNode,
-} from "@fintech/core";
-import {
-  VersionedShadowRiskEngine,
-  ALLOWED_RISK_FEATURES,
-} from "../src/risk-shadow-mode.ts";
+import { evaluateRiskRuleAst, validateRiskRuleAst, type RiskRuleAstNode } from "@fintech/core";
+import { VersionedShadowRiskEngine, ALLOWED_RISK_FEATURES } from "../src/risk-shadow-mode.ts";
 
 describe("Day 19 — Project 3: Rule Versioning, Shadow Mode 100-Payment Diff Report, Replay & AST Evaluator", () => {
   it("1. Day 19 Fintech DSA: Safe AST Expression Tree validates schema and evaluates nested AND/OR/NOT/CMP rules", () => {

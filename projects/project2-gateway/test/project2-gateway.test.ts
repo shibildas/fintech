@@ -203,8 +203,7 @@ describe("Project 2 — Merchant Payment Gateway, Smart Routing & Webhook Engine
           amountPaise: 100000,
           merchantOrderId: "rcpt_concurrent_10",
         }),
-      (err: unknown) =>
-        err instanceof IdempotencyConflictError && err.statusCode === 409
+      (err: unknown) => err instanceof IdempotencyConflictError && err.statusCode === 409
     );
   });
 
@@ -225,10 +224,7 @@ describe("Project 2 — Merchant Payment Gateway, Smart Routing & Webhook Engine
 
       if (i === 1 && savedToken) {
         // Second purchase uses saved card token — no raw PAN passed
-        const savedList = gateway.vault.listCustomerSavedTokens(
-          merchant.id,
-          "cust_repeat"
-        );
+        const savedList = gateway.vault.listCustomerSavedTokens(merchant.id, "cust_repeat");
         assert.equal(savedList.length, 1);
         assert.equal(savedList[0].token, savedToken);
 

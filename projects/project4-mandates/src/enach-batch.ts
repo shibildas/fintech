@@ -13,10 +13,7 @@ import type { PaymentGatewayEngine } from "@fintech/project2-gateway";
  */
 
 export type EnachResponseCode =
-  | "00_SUCCESS"
-  | "51_INSUFFICIENT_FUNDS"
-  | "14_MANDATE_NOT_FOUND"
-  | "78_ACCOUNT_CLOSED";
+  "00_SUCCESS" | "51_INSUFFICIENT_FUNDS" | "14_MANDATE_NOT_FOUND" | "78_ACCOUNT_CLOSED";
 
 export interface EnachPresentmentItem {
   executionKey: string;
@@ -86,8 +83,7 @@ export class EnachBankBatchSimulator {
         // Chaos: simulate bank silently omitting a row from its response file!
         continue;
       }
-      const code: EnachResponseCode =
-        this.forcedFailures.get(executionKey) ?? "00_SUCCESS";
+      const code: EnachResponseCode = this.forcedFailures.get(executionKey) ?? "00_SUCCESS";
       const bankRef = `NACH-${this.bankId}-${crypto.randomUUID().slice(0, 8)}`;
       responseDataLines.push(
         `${executionKey},${merchantId},${subscriptionId},${umrn},${amountStr},${code},${bankRef}`
@@ -95,11 +91,13 @@ export class EnachBankBatchSimulator {
     }
 
     const sha256 = computeBatchLinesSha256(responseDataLines);
-    return [
-      `HDR,NACH_RESPONSE,${batchId},${this.bankId},${now.toISOString()}`,
-      ...responseDataLines,
-      `TRL,${responseDataLines.length},${sha256}`,
-    ].join("\n") + "\n";
+    return (
+      [
+        `HDR,NACH_RESPONSE,${batchId},${this.bankId},${now.toISOString()}`,
+        ...responseDataLines,
+        `TRL,${responseDataLines.length},${sha256}`,
+      ].join("\n") + "\n"
+    );
   }
 }
 
@@ -242,15 +240,16 @@ export class EnachPresentmentEngine {
       throw new Error(`Corrupt e-NACH response CSV for batch ${batchId}: ${check.reason}`);
     }
 
-    const batch = this.db
-      .prepare(`SELECT * FROM enach_batches WHERE batch_id = ?`)
-      .get(batchId) as { batch_id: string; bank_id: string } | undefined;
+    const batch = this.db.prepare(`SELECT * FROM enach_batches WHERE batch_id = ?`).get(batchId) as
+      { batch_id: string; bank_id: string } | undefined;
     if (!batch) {
       throw new Error(`Batch "${batchId}" not found`);
     }
 
     const presentedRows = this.db
-      .prepare(`SELECT execution_key, merchant_id, amount_paise FROM enach_batch_items WHERE batch_id = ?`)
+      .prepare(
+        `SELECT execution_key, merchant_id, amount_paise FROM enach_batch_items WHERE batch_id = ?`
+      )
       .all(batchId) as Array<{ execution_key: string; merchant_id: string; amount_paise: number }>;
 
     const presentedKeys = presentedRows.map((r) => r.execution_key);

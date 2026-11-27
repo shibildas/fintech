@@ -4,10 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { signServiceMessage } from "@fintech/core";
-import {
-  createPersistentGatewayContext,
-  GatewayHttpServer,
-} from "../src/index.ts";
+import { createPersistentGatewayContext, GatewayHttpServer } from "../src/index.ts";
 
 describe("Slices 02 & 03 — Project 2 Gateway Live HTTP Server, HMAC Auth, Isolated Vault & Ops", () => {
   it("Enforces strict HMAC auth (401), cross-tenant IDOR (403), 400 validation, vault isolation + PCI grep, failover, refunds (422), key rotation & restart persistence", async () => {
@@ -94,7 +91,10 @@ describe("Slices 02 & 03 — Project 2 Gateway Live HTTP Server, HMAC Auth, Isol
         settlementHolderName: "Other Store Pvt Ltd",
         returnUrl: "https://other.store.in/return",
       });
-      ctx.gateway.transitionMerchantOnboarding({ merchantId: m2.merchant.id, toState: "UNDER_REVIEW" });
+      ctx.gateway.transitionMerchantOnboarding({
+        merchantId: m2.merchant.id,
+        toState: "UNDER_REVIEW",
+      });
       ctx.gateway.transitionMerchantOnboarding({ merchantId: m2.merchant.id, toState: "ACTIVE" });
 
       const idorPay = await signedFetch(
@@ -123,8 +123,13 @@ describe("Slices 02 & 03 — Project 2 Gateway Live HTTP Server, HMAC Auth, Isol
         cardOtp: "123456",
       });
       assert.equal(pay.status, 200);
-      const paymentId = (pay.body as { payment: { id: string; acquirer_id: string }; attempts: unknown[] }).payment.id;
-      assert.equal((pay.body as { payment: { acquirer_id: string } }).payment.acquirer_id, "ACQ_BETA");
+      const paymentId = (
+        pay.body as { payment: { id: string; acquirer_id: string }; attempts: unknown[] }
+      ).payment.id;
+      assert.equal(
+        (pay.body as { payment: { acquirer_id: string } }).payment.acquirer_id,
+        "ACQ_BETA"
+      );
       assert.equal((pay.body as { attempts: unknown[] }).attempts.length, 2);
 
       // 5. PCI Grep Audit -> 0 leaks across p2-gateway.sqlite & p2-vault.sqlite
@@ -155,7 +160,10 @@ describe("Slices 02 & 03 — Project 2 Gateway Live HTTP Server, HMAC Auth, Isol
         secret: ctx.seededApiSecret,
       });
       assert.equal(parityWithOldSecret.status, 200);
-      assert.equal((parityWithOldSecret.body as { parity: { matches: boolean } }).parity.matches, true);
+      assert.equal(
+        (parityWithOldSecret.body as { parity: { matches: boolean } }).parity.matches,
+        true
+      );
 
       // 8. True restart persistence: same merchantId & ledger parity survive restart
       const ctx2 = createPersistentGatewayContext({ dataDir: tmpDir });

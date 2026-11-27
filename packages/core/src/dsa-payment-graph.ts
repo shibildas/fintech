@@ -137,8 +137,7 @@ export class PaymentCorridorGraph {
         if (!edge.active || this.downNodes.has(edge.to) || visited.has(edge.to)) {
           continue;
         }
-        const edgeCost =
-          latencyWeight * edge.latencyMs + feeWeight * edge.feeBps;
+        const edgeCost = latencyWeight * edge.latencyMs + feeWeight * edge.feeBps;
         const nextCost = currCost + edgeCost;
 
         if (nextCost < (dist.get(edge.to) ?? Number.POSITIVE_INFINITY)) {
@@ -154,11 +153,7 @@ export class PaymentCorridorGraph {
     return null;
   }
 
-  private reconstructPath(
-    parent: Map<string, string>,
-    source: string,
-    target: string
-  ): string[] {
+  private reconstructPath(parent: Map<string, string>, source: string, target: string): string[] {
     const path: string[] = [];
     let curr: string | undefined = target;
     while (curr !== undefined) {

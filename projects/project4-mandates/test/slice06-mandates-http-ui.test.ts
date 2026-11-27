@@ -3,10 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  createPersistentMandatesContext,
-  MandatesHttpServer,
-} from "../src/index.ts";
+import { createPersistentMandatesContext, MandatesHttpServer } from "../src/index.ts";
 
 describe("Slice 06 — Project 4 Mandates Live HTTP Server, Fake Clock Persistence, 24h Pre-Debit Gate & Dunning", () => {
   it("Enforces X-Merchant-Token (401), clock validation (400), 24h Pre-Debit Gate (403 -> +24h -> 200), Dunning/Pay-Now & MRR parity across restart", async () => {
@@ -30,17 +27,33 @@ describe("Slice 06 — Project 4 Mandates Live HTTP Server, Fake Clock Persisten
 
       assert.equal((await fetch(`${base}/api/clock`)).status, 401);
       assert.equal(
-        (await fetch(`${base}/api/clock/advance`, { method: "POST", headers: hdrs, body: JSON.stringify({ setIso: "not-a-date" }) })).status,
+        (
+          await fetch(`${base}/api/clock/advance`, {
+            method: "POST",
+            headers: hdrs,
+            body: JSON.stringify({ setIso: "not-a-date" }),
+          })
+        ).status,
         400
       );
       assert.equal(
-        (await fetch(`${base}/api/clock/advance`, { method: "POST", headers: hdrs, body: JSON.stringify({ hours: "abc" }) })).status,
+        (
+          await fetch(`${base}/api/clock/advance`, {
+            method: "POST",
+            headers: hdrs,
+            body: JSON.stringify({ hours: "abc" }),
+          })
+        ).status,
         400
       );
       assert.equal((await fetch(`${base}/health`)).status, 200);
 
       // 2. Create mandate -> wrong PIN (401) -> valid PIN mints UMRN
-      const mRes = await fetch(`${base}/api/mandates`, { method: "POST", headers: hdrs, body: JSON.stringify({ rail: "UPI_AUTOPAY" }) });
+      const mRes = await fetch(`${base}/api/mandates`, {
+        method: "POST",
+        headers: hdrs,
+        body: JSON.stringify({ rail: "UPI_AUTOPAY" }),
+      });
       const mandate = (await mRes.json()) as { id: string };
 
       const badAuth = await fetch(`${base}/api/mandates/${mandate.id}/authorize`, {
@@ -60,17 +73,21 @@ describe("Slice 06 — Project 4 Mandates Live HTTP Server, Fake Clock Persisten
       assert.ok(activeMandate.umrn.startsWith("UMRN"));
 
       // 3. Plan, Subscription & 24h Pre-Debit Gate (403 -> +24h -> 200)
-      const plan = (await (await fetch(`${base}/api/plans`, {
-        method: "POST",
-        headers: hdrs,
-        body: JSON.stringify({ name: "Monthly Pro", amountPaise: 49_900 }),
-      })).json()) as { id: string };
+      const plan = (await (
+        await fetch(`${base}/api/plans`, {
+          method: "POST",
+          headers: hdrs,
+          body: JSON.stringify({ name: "Monthly Pro", amountPaise: 49_900 }),
+        })
+      ).json()) as { id: string };
 
-      const sub = (await (await fetch(`${base}/api/subscriptions`, {
-        method: "POST",
-        headers: hdrs,
-        body: JSON.stringify({ planId: plan.id, mandateId: mandate.id, anchorDay: 31 }),
-      })).json()) as { id: string };
+      const sub = (await (
+        await fetch(`${base}/api/subscriptions`, {
+          method: "POST",
+          headers: hdrs,
+          body: JSON.stringify({ planId: plan.id, mandateId: mandate.id, anchorDay: 31 }),
+        })
+      ).json()) as { id: string };
 
       await fetch(`${base}/api/cycles/pre-debit`, {
         method: "POST",
@@ -78,13 +95,29 @@ describe("Slice 06 — Project 4 Mandates Live HTTP Server, Fake Clock Persisten
         body: JSON.stringify({ subscriptionId: sub.id, cycleNumber: 1 }),
       });
       assert.equal(
-        (await fetch(`${base}/api/cycles/execute`, { method: "POST", headers: hdrs, body: JSON.stringify({ subscriptionId: sub.id, cycleNumber: 1 }) })).status,
+        (
+          await fetch(`${base}/api/cycles/execute`, {
+            method: "POST",
+            headers: hdrs,
+            body: JSON.stringify({ subscriptionId: sub.id, cycleNumber: 1 }),
+          })
+        ).status,
         403
       );
 
-      await fetch(`${base}/api/clock/advance`, { method: "POST", headers: hdrs, body: JSON.stringify({ hours: 24 }) });
+      await fetch(`${base}/api/clock/advance`, {
+        method: "POST",
+        headers: hdrs,
+        body: JSON.stringify({ hours: 24 }),
+      });
       assert.equal(
-        (await fetch(`${base}/api/cycles/execute`, { method: "POST", headers: hdrs, body: JSON.stringify({ subscriptionId: sub.id, cycleNumber: 1 }) })).status,
+        (
+          await fetch(`${base}/api/cycles/execute`, {
+            method: "POST",
+            headers: hdrs,
+            body: JSON.stringify({ subscriptionId: sub.id, cycleNumber: 1 }),
+          })
+        ).status,
         200
       );
 
@@ -92,11 +125,19 @@ describe("Slice 06 — Project 4 Mandates Live HTTP Server, Fake Clock Persisten
       const invRes = await fetch(`${base}/api/invoices/demo-paid`, {
         method: "POST",
         headers: hdrs,
-        body: JSON.stringify({ subscriptionId: sub.id, umrn: activeMandate.umrn, amountPaise: 49_900 }),
+        body: JSON.stringify({
+          subscriptionId: sub.id,
+          umrn: activeMandate.umrn,
+          amountPaise: 49_900,
+        }),
       });
       assert.equal(invRes.status, 201);
       const invData = (await invRes.json()) as { invoice: { id: string } };
-      assert.equal((await fetch(`${base}/api/invoices/${invData.invoice.id}/printable`, { headers: hdrs })).status, 200);
+      assert.equal(
+        (await fetch(`${base}/api/invoices/${invData.invoice.id}/printable`, { headers: hdrs }))
+          .status,
+        200
+      );
 
       const dunRes = await fetch(`${base}/api/dunning/fail`, {
         method: "POST",
@@ -121,7 +162,10 @@ describe("Slice 06 — Project 4 Mandates Live HTTP Server, Fake Clock Persisten
 
       const parity2 = await fetch(`${base2}/api/invoices/mrr-parity`, { headers: hdrs });
       assert.equal(parity2.status, 200);
-      assert.equal((await parity2.json() as { paidInvoicesTotalPaise: number }).paidInvoicesTotalPaise, 49_900);
+      assert.equal(
+        ((await parity2.json()) as { paidInvoicesTotalPaise: number }).paidInvoicesTotalPaise,
+        49_900
+      );
 
       const payNowAfterRestart = await fetch(`${base2}/api/dunning/${dun.dunningCase.id}/pay-now`, {
         method: "POST",

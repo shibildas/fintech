@@ -1,9 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  InjectableFakeClock,
-  generateDeviceEd25519KeyPair,
-} from "@fintech/core";
+import { InjectableFakeClock, generateDeviceEd25519KeyPair } from "@fintech/core";
 import { createSeededGatewayTopology } from "@fintech/project2-gateway";
 import {
   ConsumerPspBackend,

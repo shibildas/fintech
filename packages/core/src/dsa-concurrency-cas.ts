@@ -63,10 +63,7 @@ export class KeyedAsyncMutex {
    * Deduplicates keys so locking [A, A] does not self-deadlock.
    * Time Complexity: O(K log K) where K is the number of keys.
    */
-  public async withOrderedLocks<T>(
-    keys: string[],
-    fn: () => Promise<T> | T
-  ): Promise<T> {
+  public async withOrderedLocks<T>(keys: string[], fn: () => Promise<T> | T): Promise<T> {
     const orderedKeys = Array.from(new Set(keys)).sort();
     const releases: Array<() => void> = [];
     try {
@@ -270,11 +267,7 @@ export class OptimisticVersionedStore<T> {
     return true;
   }
 
-  public compareAndSwap(
-    key: string,
-    expectedVersion: number,
-    nextValue: T
-  ): CasSwapResult<T> {
+  public compareAndSwap(key: string, expectedVersion: number, nextValue: T): CasSwapResult<T> {
     const current = this.store.get(key);
     if (!current) {
       throw new Error(`Key "${key}" does not exist`);

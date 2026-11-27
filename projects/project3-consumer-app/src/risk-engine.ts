@@ -100,9 +100,9 @@ export class RealTimeRiskEngine {
       );
     `);
 
-    const rows = this.db
-      .prepare(`SELECT entity_id FROM risk_blacklist`)
-      .all() as Array<{ entity_id: string }>;
+    const rows = this.db.prepare(`SELECT entity_id FROM risk_blacklist`).all() as Array<{
+      entity_id: string;
+    }>;
     for (const r of rows) {
       this.blacklistedEntities.add(r.entity_id);
     }
@@ -178,9 +178,7 @@ export class RealTimeRiskEngine {
     this.recentTxnsByCustomer.set(input.customerId, history);
 
     // Rule 1: 10-minute velocity count
-    const count10m = history.filter(
-      (h) => h.timestampMs >= nowMs - 10 * 60 * 1000
-    ).length;
+    const count10m = history.filter((h) => h.timestampMs >= nowMs - 10 * 60 * 1000).length;
     if (count10m >= 4) {
       fired.push({
         ruleId: "VELOCITY_10M",
@@ -238,10 +236,7 @@ export class RealTimeRiskEngine {
     }
 
     // Rule 7: Blacklist hit (immediate DECLINE)
-    if (
-      this.blacklistedEntities.has(payeeClean) ||
-      this.blacklistedEntities.has(deviceClean)
-    ) {
+    if (this.blacklistedEntities.has(payeeClean) || this.blacklistedEntities.has(deviceClean)) {
       fired.push({
         ruleId: "BLACKLIST_HIT",
         weight: 100,

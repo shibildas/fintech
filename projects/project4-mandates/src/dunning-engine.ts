@@ -1,10 +1,6 @@
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import {
-  buildDunningSchedule,
-  DEFAULT_DUNNING_OFFSETS_DAYS,
-  type Clock,
-} from "@fintech/core";
+import { buildDunningSchedule, DEFAULT_DUNNING_OFFSETS_DAYS, type Clock } from "@fintech/core";
 import type { PaymentGatewayEngine } from "@fintech/project2-gateway";
 import type { SubscriptionService } from "./subscription-service.ts";
 
@@ -357,9 +353,7 @@ export class DunningEngine {
       .run(nowIso, dCase.id);
 
     this.db
-      .prepare(
-        `UPDATE dunning_cases SET status = 'RECOVERED_PAY_NOW', updated_at = ? WHERE id = ?`
-      )
+      .prepare(`UPDATE dunning_cases SET status = 'RECOVERED_PAY_NOW', updated_at = ? WHERE id = ?`)
       .run(nowIso, dCase.id);
 
     this.subs.transitionState(sub.id, "ACTIVE");
@@ -371,14 +365,15 @@ export class DunningEngine {
   }
 
   public getCase(caseId: string): DunningCaseRecord | undefined {
-    return this.db
-      .prepare(`SELECT * FROM dunning_cases WHERE id = ?`)
-      .get(caseId) as unknown as DunningCaseRecord | undefined;
+    return this.db.prepare(`SELECT * FROM dunning_cases WHERE id = ?`).get(caseId) as unknown as
+      DunningCaseRecord | undefined;
   }
 
   public listRetries(caseId: string): DunningRetryRecord[] {
     return this.db
-      .prepare(`SELECT * FROM dunning_retries WHERE dunning_case_id = ? ORDER BY attempt_number ASC`)
+      .prepare(
+        `SELECT * FROM dunning_retries WHERE dunning_case_id = ? ORDER BY attempt_number ASC`
+      )
       .all(caseId) as unknown as DunningRetryRecord[];
   }
 }

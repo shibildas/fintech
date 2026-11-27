@@ -1,10 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import {
-  DistributedLeaseManager,
-  InjectableFakeClock,
-} from "@fintech/core";
+import { DistributedLeaseManager, InjectableFakeClock } from "@fintech/core";
 import { RecurringCycleExecutor } from "../src/index.ts";
 
 describe("Day 28 — Milestone 4: 10,000-Cycle Same-Minute Load Benchmark (Zero Duplicate Debits)", () => {
@@ -79,6 +76,9 @@ describe("Day 28 — Milestone 4: 10,000-Cycle Same-Minute Load Benchmark (Zero 
     assert.equal(claimedCount, totalCycles);
     assert.equal(duplicateRejectedCount, totalCycles);
     assert.equal(rowCount, totalCycles);
-    assert.ok(elapsedMs < 5000, `Expected 10,000 cycles in < 5000ms, took ${elapsedMs.toFixed(1)}ms`);
+    assert.ok(
+      elapsedMs < 5000,
+      `Expected 10,000 cycles in < 5000ms, took ${elapsedMs.toFixed(1)}ms`
+    );
   });
 });

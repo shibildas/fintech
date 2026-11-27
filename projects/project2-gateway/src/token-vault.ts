@@ -53,8 +53,7 @@ export class TokenVaultService {
     if (this.encryptionKey.length !== 32) {
       throw new Error("Vault AES-256-GCM encryption key must be 32 bytes (64 hex chars)");
     }
-    this.adapterCredential =
-      config?.adapterCredential ?? "INTERNAL_ACQUIRER_ADAPTER_SECRET_KEY";
+    this.adapterCredential = config?.adapterCredential ?? "INTERNAL_ACQUIRER_ADAPTER_SECRET_KEY";
     this.initSchema();
     this.seedBinTable();
   }
@@ -122,10 +121,7 @@ export class TokenVaultService {
     // Encrypt PAN at rest using AES-256-GCM
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv("aes-256-gcm", this.encryptionKey, iv);
-    const encrypted = Buffer.concat([
-      cipher.update(cleanPan, "utf8"),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(cleanPan, "utf8"), cipher.final()]);
     const authTag = cipher.getAuthTag();
 
     const token = `tok_${crypto.randomBytes(12).toString("hex")}`;
@@ -173,11 +169,7 @@ export class TokenVaultService {
    * - Enforces that `merchantId` matches the merchant that created the token (Req 17:
    *   "a merchant can only use tokens it created").
    */
-  public detokenize(params: {
-    token: string;
-    merchantId: string;
-    adapterCredential: string;
-  }): {
+  public detokenize(params: { token: string; merchantId: string; adapterCredential: string }): {
     cardNumber: string;
     expiry: string;
     network: CardNetwork;
@@ -248,10 +240,7 @@ export class TokenVaultService {
     };
   }
 
-  public getPublicTokenMetadata(
-    token: string,
-    merchantId: string
-  ): PublicTokenMetadata {
+  public getPublicTokenMetadata(token: string, merchantId: string): PublicTokenMetadata {
     const row = this.vaultDb
       .prepare(
         `SELECT token, network, issuer_bank, bin6, last_four, expiry, merchant_id, customer_reference, created_at
@@ -317,9 +306,7 @@ export function runPciGrepTest(params: {
 
   // 1. Grep all non-vault tables in gatewayDb
   const gatewayTables = params.gatewayDb
-    .prepare(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
-    )
+    .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`)
     .all() as Array<{ name: string }>;
 
   for (const { name } of gatewayTables) {

@@ -3,11 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  generateDeviceEd25519KeyPair,
-  parseUpiQrUri,
-  buildUpiQrUri,
-} from "@fintech/core";
+import { generateDeviceEd25519KeyPair, parseUpiQrUri, buildUpiQrUri } from "@fintech/core";
 import {
   createSeededConsumerPspTopology,
   ConsumerAppLocalStore,

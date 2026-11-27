@@ -102,10 +102,7 @@ export class AcquirerSimulator {
     if (this.chaos.latencyMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.chaos.latencyMs));
     }
-    const measuredLatency = Math.max(
-      this.chaos.latencyMs,
-      Math.round(performance.now() - startMs)
-    );
+    const measuredLatency = Math.max(this.chaos.latencyMs, Math.round(performance.now() - startMs));
 
     const acqRef = `${this.config.acquirerId}-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -189,10 +186,7 @@ export class AcquirerSimulator {
    * Interface: `POST /refund`
    * Requirement 23: "The acquirer simulator must be able to fail a refund so the failed path is demonstrable."
    */
-  public async refund(params: {
-    paymentAcquirerReference: string;
-    amountPaise: number;
-  }): Promise<{
+  public async refund(_params: { paymentAcquirerReference: string; amountPaise: number }): Promise<{
     refund_acquirer_reference: string;
     status: "PROCESSED" | "FAILED";
     reason?: string;

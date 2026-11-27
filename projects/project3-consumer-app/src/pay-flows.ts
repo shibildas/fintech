@@ -220,7 +220,7 @@ export class ConsumerPayEngine {
         return {
           vpa: res.vpa,
           holderName: res.holder_name,
-          accountMasked: res.account_number_masked,
+          accountMasked: res.masked_account,
         };
       }
     }
@@ -257,10 +257,10 @@ export class ConsumerPayEngine {
   /**
    * Resolves Bank Account + IFSC (`branchPrefix`) to a bank-rail VPA in the PSP directory.
    */
-  public resolveBankAccountIfscTarget(params: {
-    accountNumber: string;
-    ifscCode: string;
-  }): { vpa: string; holderName: string } {
+  public resolveBankAccountIfscTarget(params: { accountNumber: string; ifscCode: string }): {
+    vpa: string;
+    holderName: string;
+  } {
     const ifscUpper = params.ifscCode.trim().toUpperCase();
     for (const bankId of ["BANKA", "BANKB", "BANKC"]) {
       const bankList = this.pspBackend.listBanks();
@@ -344,7 +344,9 @@ export class ConsumerPayEngine {
       .get(verified.customer.id, params.payerVpa.trim().toLowerCase());
     if (!ownedVpa) {
       throw Object.assign(
-        new Error(`Forbidden (HTTP 403): Payer VPA "${params.payerVpa}" is not owned by authenticated customer`),
+        new Error(
+          `Forbidden (HTTP 403): Payer VPA "${params.payerVpa}" is not owned by authenticated customer`
+        ),
         { statusCode: 403 }
       );
     }
@@ -390,11 +392,7 @@ export class ConsumerPayEngine {
     assertPositivePaise(resolvedAmountPaise, "amountPaise");
 
     // 4. Enforce 24h new-device cooling cap
-    this.pspBackend.checkNewDeviceCoolingLimit(
-      params.customerId,
-      resolvedAmountPaise,
-      now
-    );
+    this.pspBackend.checkNewDeviceCoolingLimit(params.customerId, resolvedAmountPaise, now);
 
     // 5. Verify per-transaction salted nonce PIN proof
     const pinRes = this.pspBackend.verifyPinWithNonce({
@@ -638,13 +636,15 @@ export class ConsumerAppLocalStore {
     return updated;
   }
 
-  public getLocalTxn(clientTxnId: string): {
-    client_txn_id: string;
-    payee_label: string;
-    amount_paise: number;
-    status: "PENDING" | "SUCCESS" | "FAILED" | "REVERSED";
-    honest_banner: string;
-  } | undefined {
+  public getLocalTxn(clientTxnId: string):
+    | {
+        client_txn_id: string;
+        payee_label: string;
+        amount_paise: number;
+        status: "PENDING" | "SUCCESS" | "FAILED" | "REVERSED";
+        honest_banner: string;
+      }
+    | undefined {
     return this.db
       .prepare(`SELECT * FROM local_pending_txns WHERE client_txn_id = ?`)
       .get(clientTxnId) as

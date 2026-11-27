@@ -234,10 +234,7 @@ export class DoubleEntryLedger {
       );
 
     if (params.initialOpeningBalancePaise && params.initialOpeningBalancePaise > 0) {
-      assertPositivePaise(
-        params.initialOpeningBalancePaise,
-        "initialOpeningBalancePaise"
-      );
+      assertPositivePaise(params.initialOpeningBalancePaise, "initialOpeningBalancePaise");
       this.postJournalEntry({
         rrn: `000000${String(Math.floor(Math.random() * 900000) + 100000)}`,
         transactionId: `OPENING-${params.accountNumber}`,
@@ -275,11 +272,7 @@ export class DoubleEntryLedger {
     return row;
   }
 
-  public placeHold(params: {
-    accountNumber: string;
-    amountPaise: number;
-    reason: string;
-  }): string {
+  public placeHold(params: { accountNumber: string; amountPaise: number; reason: string }): string {
     assertPositivePaise(params.amountPaise, "holdAmountPaise");
     const balance = this.getBalance(params.accountNumber);
     if (balance.available_balance_paise < params.amountPaise) {
