@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: fintech-infrastructure-stack
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: CLOUD_SINGLE_PORT
+        value: "true"
+      - key: FINTECH_DATA_DIR
+        value: /app/.data
