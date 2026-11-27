@@ -101,6 +101,7 @@ export function renderFintechShellHtml(params: {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M9 9h14v2.6h-4.6c.7.7 1.2 1.6 1.4 2.7H23v2.4h-3.2c-.4 2.5-2.3 4.2-5.4 4.5l5.9 5.8h-3.8l-6.1-6.1v-2.1h2.8c2.2 0 3.5-.8 3.9-2.1H9v-2.4h8.1c-.4-1.2-1.5-1.9-3.4-1.9H9V9z' fill='%23ffffff'/%3E%3C/svg%3E" />
   <title>${safeTitle}</title>
   <style>
     :root {
@@ -236,7 +237,7 @@ export function renderFintechShellHtml(params: {
       </div>
       <div id="loginErr" class="badge err hidden" style="margin-bottom:12px;width:100%;justify-content:center;padding:8px;"></div>
       <button id="loginBtn" type="submit" style="width:100%;padding:11px;">Sign In</button>
-      <div class="login-foot">Passwords are stored as salted <code>scrypt</code> hashes in SQLite. Demo passwords are printed to server logs &amp; README.</div>
+      <div class="login-foot">Protected workspace authentication. Select an account above or enter your credentials.</div>
     </form>
   </div>
 
