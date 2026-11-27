@@ -1,9 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  InjectableFakeClock,
-  DistributedLeaseManager,
-} from "@fintech/core";
+import { InjectableFakeClock, DistributedLeaseManager } from "@fintech/core";
 import { createSeededTopology, CentralSwitch } from "@fintech/project1-switch";
 import {
   MandateService,
@@ -140,15 +137,30 @@ describe("Day 24 — Project 4: 24h Pre-Debit Notice Gate, Kill-Safe Exactly-Onc
     const leases = new DistributedLeaseManager();
     const t0 = 1_000_000;
 
-    const a1 = leases.acquire({ key: "sub_1:cycle:1", ownerId: "worker-A", leaseDurationMs: 5000, nowMs: t0 });
+    const a1 = leases.acquire({
+      key: "sub_1:cycle:1",
+      ownerId: "worker-A",
+      leaseDurationMs: 5000,
+      nowMs: t0,
+    });
     assert.equal(a1.acquired, true);
 
     // Worker B blocked while Worker A's lease is active
-    const b1 = leases.acquire({ key: "sub_1:cycle:1", ownerId: "worker-B", leaseDurationMs: 5000, nowMs: t0 + 2000 });
+    const b1 = leases.acquire({
+      key: "sub_1:cycle:1",
+      ownerId: "worker-B",
+      leaseDurationMs: 5000,
+      nowMs: t0 + 2000,
+    });
     assert.equal(b1.acquired, false);
 
     // After lease expires at t0 + 5001, Worker B safely takes over with a higher fencing token
-    const b2 = leases.acquire({ key: "sub_1:cycle:1", ownerId: "worker-B", leaseDurationMs: 5000, nowMs: t0 + 5001 });
+    const b2 = leases.acquire({
+      key: "sub_1:cycle:1",
+      ownerId: "worker-B",
+      leaseDurationMs: 5000,
+      nowMs: t0 + 5001,
+    });
     assert.equal(b2.acquired, true);
     if (a1.acquired && b2.acquired) {
       assert.ok(b2.lease.fencingToken > a1.lease.fencingToken);

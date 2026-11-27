@@ -125,9 +125,7 @@ export class AcquirerRoutingEngine {
     const next: MethodRoutingOverride = {
       method: params.method,
       forcedAcquirerId:
-        params.forcedAcquirerId !== undefined
-          ? params.forcedAcquirerId
-          : prev.forcedAcquirerId,
+        params.forcedAcquirerId !== undefined ? params.forcedAcquirerId : prev.forcedAcquirerId,
       blockedAcquirerIds:
         params.blockedAcquirerIds !== undefined
           ? [...params.blockedAcquirerIds]
@@ -201,10 +199,7 @@ export class AcquirerRoutingEngine {
     return this.recomputeHealth(params.acquirerId, params.method);
   }
 
-  public recomputeHealth(
-    acquirerId: string,
-    method: PaymentMethod
-  ): AcquirerHealthSnapshot {
+  public recomputeHealth(acquirerId: string, method: PaymentMethod): AcquirerHealthSnapshot {
     const key = `${acquirerId}:${method}`;
     const samples = this.rollingSamples.get(key) ?? [];
     const acq = this.acquirers.get(acquirerId)!;
@@ -226,11 +221,8 @@ export class AcquirerRoutingEngine {
     // Health Score formula (0 to 100):
     // 80% weight on success rate + 20% weight on low latency (<500ms), minus 10 points per timeout
     const latencyScore = Math.max(0, 100 - Math.min(100, p95LatencyMs / 10));
-    const rawScore =
-      successRatePercent * 0.8 + latencyScore * 0.2 - timeoutCount * 10;
-    const score = isBlocked
-      ? 0
-      : Math.max(0, Math.min(100, Math.round(rawScore * 100) / 100));
+    const rawScore = successRatePercent * 0.8 + latencyScore * 0.2 - timeoutCount * 10;
+    const score = isBlocked ? 0 : Math.max(0, Math.min(100, Math.round(rawScore * 100) / 100));
 
     const state: AcquirerHealthSnapshot["state"] = isBlocked
       ? "BLOCKED"
@@ -322,23 +314,13 @@ export class AcquirerRoutingEngine {
       ) {
         continue;
       }
-      if (
-        rule.issuerBanks &&
-        params.issuerBank &&
-        !rule.issuerBanks.includes(params.issuerBank)
-      ) {
+      if (rule.issuerBanks && params.issuerBank && !rule.issuerBanks.includes(params.issuerBank)) {
         continue;
       }
-      if (
-        rule.minAmountPaise !== undefined &&
-        params.amountPaise < rule.minAmountPaise
-      ) {
+      if (rule.minAmountPaise !== undefined && params.amountPaise < rule.minAmountPaise) {
         continue;
       }
-      if (
-        rule.maxAmountPaise !== undefined &&
-        params.amountPaise > rule.maxAmountPaise
-      ) {
+      if (rule.maxAmountPaise !== undefined && params.amountPaise > rule.maxAmountPaise) {
         continue;
       }
       if (!matchedAcquirerPriority.has(rule.acquirerId)) {

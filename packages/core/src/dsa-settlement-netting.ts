@@ -28,9 +28,7 @@ export interface MultilateralNettingResult {
   simplifiedTransferCount: number;
 }
 
-export function simplifyMultilateralSettlement(
-  legs: BilateralLeg[]
-): MultilateralNettingResult {
+export function simplifyMultilateralSettlement(legs: BilateralLeg[]): MultilateralNettingResult {
   const netMap = new Map<string, number>();
 
   for (const leg of legs) {
@@ -47,9 +45,7 @@ export function simplifyMultilateralSettlement(
   const debtors: Array<{ bank: string; owePaise: number }> = [];
   const creditors: Array<{ bank: string; receivablePaise: number }> = [];
 
-  for (const [bank, net] of Array.from(netMap.entries()).sort((a, b) =>
-    a[0].localeCompare(b[0])
-  )) {
+  for (const [bank, net] of Array.from(netMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
     netPositions[bank] = net;
     totalSum += net;
     if (net < 0) {

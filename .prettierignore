@@ -1,0 +1,5 @@
+node_modules/
+.data/
+.agent/
+docs/
+package-lock.json

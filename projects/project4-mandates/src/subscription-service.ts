@@ -68,11 +68,7 @@ export class SubscriptionService {
   private readonly mandates: MandateService;
   private readonly clock: Clock;
 
-  constructor(params: {
-    mandates: MandateService;
-    clock?: Clock;
-    dbPath?: string;
-  }) {
+  constructor(params: { mandates: MandateService; clock?: Clock; dbPath?: string }) {
     this.db = new DatabaseSync(params.dbPath ?? ":memory:");
     this.audit = new AuditLogger(this.db);
     this.mandates = params.mandates;
@@ -344,10 +340,7 @@ export class SubscriptionService {
     };
   }
 
-  public transitionState(
-    subscriptionId: string,
-    toState: SubscriptionState
-  ): SubscriptionRecord {
+  public transitionState(subscriptionId: string, toState: SubscriptionState): SubscriptionRecord {
     const sub = this.getSubscription(subscriptionId);
     if (!sub) {
       throw new Error(`Subscription "${subscriptionId}" not found`);
@@ -388,9 +381,8 @@ export class SubscriptionService {
   }
 
   public getPlan(planId: string): PlanRecord | undefined {
-    return this.db
-      .prepare(`SELECT * FROM plans WHERE id = ?`)
-      .get(planId) as unknown as PlanRecord | undefined;
+    return this.db.prepare(`SELECT * FROM plans WHERE id = ?`).get(planId) as unknown as
+      PlanRecord | undefined;
   }
 
   public getSubscription(subscriptionId: string): SubscriptionRecord | undefined {

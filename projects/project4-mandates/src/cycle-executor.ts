@@ -1,10 +1,6 @@
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import {
-  AuditLogger,
-  DistributedLeaseManager,
-  type Clock,
-} from "@fintech/core";
+import { AuditLogger, DistributedLeaseManager, type Clock } from "@fintech/core";
 import type { CentralSwitch, PspSimulator } from "@fintech/project1-switch";
 import type { MandateService } from "./mandate-service.ts";
 import type { SubscriptionService } from "./subscription-service.ts";
@@ -126,19 +122,13 @@ export class RecurringCycleExecutor {
   /**
    * Sends & records the mandatory RBI 24-hour pre-debit notice with a 1-click pause/cancel link.
    */
-  public sendPreDebitNotice(
-    subscriptionId: string,
-    cycleNumber: number
-  ): PreDebitNoticeRecord {
+  public sendPreDebitNotice(subscriptionId: string, cycleNumber: number): PreDebitNoticeRecord {
     const sub = this.subs.getSubscription(subscriptionId);
     if (!sub) {
       throw new Error(`Subscription "${subscriptionId}" not found`);
     }
     const plan = this.subs.getPlan(sub.plan_id)!;
-    const executionKey = RecurringCycleExecutor.buildExecutionKey(
-      subscriptionId,
-      cycleNumber
-    );
+    const executionKey = RecurringCycleExecutor.buildExecutionKey(subscriptionId, cycleNumber);
     const nowIso = this.clock.now().toISOString();
     const pauseUrl = `https://portal.mandates.local/manage/${sub.id}?action=pause_or_cancel&key=${encodeURIComponent(
       executionKey
@@ -151,15 +141,7 @@ export class RecurringCycleExecutor {
           amount_paise, pause_or_cancel_url, sent_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(
-        executionKey,
-        sub.id,
-        cycleNumber,
-        sub.customer_id,
-        plan.amount_paise,
-        pauseUrl,
-        nowIso
-      );
+      .run(executionKey, sub.id, cycleNumber, sub.customer_id, plan.amount_paise, pauseUrl, nowIso);
 
     return this.getPreDebitNotice(executionKey)!;
   }
@@ -197,10 +179,9 @@ export class RecurringCycleExecutor {
       throw new Error(`Subscription "${params.subscriptionId}" not found`);
     }
     if (sub.state !== "ACTIVE" && sub.state !== "PAST_DUE") {
-      throw Object.assign(
-        new Error(`Subscription "${sub.id}" is "${sub.state}" — debit aborted`),
-        { statusCode: 403 }
-      );
+      throw Object.assign(new Error(`Subscription "${sub.id}" is "${sub.state}" — debit aborted`), {
+        statusCode: 403,
+      });
     }
 
     // 2. Customer local execution window check (06:00–22:00)

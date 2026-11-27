@@ -26,8 +26,7 @@ export class InjectableFakeClock implements Clock {
   }
 
   public setTime(isoOrDate: string | Date): void {
-    this.currentMs =
-      typeof isoOrDate === "string" ? Date.parse(isoOrDate) : isoOrDate.getTime();
+    this.currentMs = typeof isoOrDate === "string" ? Date.parse(isoOrDate) : isoOrDate.getTime();
   }
 
   public advanceByMs(deltaMs: number): Date {

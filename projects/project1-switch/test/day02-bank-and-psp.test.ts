@@ -6,21 +6,14 @@ import {
   RoutingPrefixTrie,
   type Iso8583MessageEnvelope,
 } from "../../../packages/core/src/index.ts";
-import {
-  createSeededTopology,
-  BankTimeoutSimulatedError,
-} from "../src/index.ts";
+import { createSeededTopology, BankTimeoutSimulatedError } from "../src/index.ts";
 
 function buildSignedSwitchToBankEnvelope(
   unsigned: Omit<Iso8583MessageEnvelope, "signature">,
   bankSecret: string
 ): Iso8583MessageEnvelope {
   const rawBody = JSON.stringify(unsigned);
-  const signature = signServiceMessage(
-    rawBody,
-    unsigned.transmission_time,
-    bankSecret
-  );
+  const signature = signServiceMessage(rawBody, unsigned.transmission_time, bankSecret);
   return { ...unsigned, signature };
 }
 
@@ -128,8 +121,7 @@ describe("Day 2 Build — 3 Bank Core Simulators, 2 PSP Directories, Chaos & EOD
 
     // Verify money WAS debited inside BANKA's ledger despite the timeout!
     assert.equal(
-      banks.BANKA.ledger.getBalance(anitaInternal.account_number)
-        .available_balance_paise,
+      banks.BANKA.ledger.getBalance(anitaInternal.account_number).available_balance_paise,
       850_000 // ₹8,500.00
     );
 
@@ -183,8 +175,7 @@ describe("Day 2 Build — 3 Bank Core Simulators, 2 PSP Directories, Chaos & EOD
     });
     assert.equal(creditRes.response_code, "00");
     assert.equal(
-      banks.BANKC.ledger.getBalance(shopInternal.account_number)
-        .available_balance_paise,
+      banks.BANKC.ledger.getBalance(shopInternal.account_number).available_balance_paise,
       350_000 // ₹2,000 + ₹1,500 = ₹3,500.00
     );
 

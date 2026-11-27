@@ -37,11 +37,7 @@ export function threeWaySortedMergeJoin(
   let j = 0;
   let k = 0;
 
-  while (
-    i < switchSorted.length ||
-    j < remitterSorted.length ||
-    k < beneficiarySorted.length
-  ) {
+  while (i < switchSorted.length || j < remitterSorted.length || k < beneficiarySorted.length) {
     const rrnS = i < switchSorted.length ? switchSorted[i].rrn : null;
     const rrnR = j < remitterSorted.length ? remitterSorted[j].rrn : null;
     const rrnB = k < beneficiarySorted.length ? beneficiarySorted[k].rrn : null;

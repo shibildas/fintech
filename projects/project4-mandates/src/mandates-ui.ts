@@ -6,12 +6,14 @@ import { renderFintechShellHtml } from "@fintech/core";
 export function renderMandatesUiHtml(): string {
   return renderFintechShellHtml({
     title: "Project 4 — RBI Mandates (AutoPay & e-NACH), Subscriptions & Fake Clock",
-    subtitle: "Persisted Injectable Fake Clock • UMRN & Cap Re-Auth • 24h Pre-Debit Gate • Dunning & Pay-Now",
+    subtitle:
+      "Persisted Injectable Fake Clock • UMRN & Cap Re-Auth • 24h Pre-Debit Gate • Dunning & Pay-Now",
     activePort: 3004,
     bodyHtml: `
       <div class="auth-bar">
         <label>X-Merchant-Token (see server stdout)<input id="p4Token" type="password" placeholder="Paste X-Merchant-Token" /></label>
         <button onclick="refreshClock()">Refresh Clock</button>
+        <button class="secondary" onclick="loadSavedState()">Load Saved State</button>
         <button onclick="advanceClock({ hours: 10 })">+10h</button>
         <button onclick="advanceClock({ hours: 24 })">+24h (Pre-Debit)</button>
         <button class="secondary" onclick="advanceClock({ days: 1 })">+1d</button>
@@ -80,6 +82,22 @@ export function renderMandatesUiHtml(): string {
         const data = await r.json();
         if (r.ok) updateClockBadge(data);
         else show("mOut", { status: r.status, body: data });
+      }
+      async function loadSavedState() {
+        const [mr, sr] = await Promise.all([
+          fetch("/api/mandates", { headers: p4Headers() }),
+          fetch("/api/subscriptions", { headers: p4Headers() })
+        ]);
+        const mData = await mr.json();
+        const sData = await sr.json();
+        if (mr.ok && mData.mandates?.[0]) {
+          p4State.mandateId = mData.mandates[0].id;
+          p4State.umrn = mData.mandates[0].umrn || "";
+        }
+        if (sr.ok && sData.subscriptions?.[0]) {
+          p4State.subId = sData.subscriptions[0].id;
+        }
+        show("mOut", { hydratedState: p4State, mandatesCount: mData.mandates?.length ?? 0, subscriptionsCount: sData.subscriptions?.length ?? 0 });
       }
       async function advanceClock(body) {
         const r = await fetch("/api/clock/advance", { method: "POST", headers: p4Headers(), body: JSON.stringify(body) });

@@ -67,8 +67,7 @@ describe("Day 1 Fintech DSA — O(1) TTL-LRU Cache & Single-Flight Coalescing", 
           payloadHash: "HASH_999900_PAISE_TAMPERED",
           work: simulateSlowBankDebit,
         }),
-      (err: unknown) =>
-        err instanceof IdempotencyConflictError && err.statusCode === 409
+      (err: unknown) => err instanceof IdempotencyConflictError && err.statusCode === 409
     );
 
     const results = await Promise.all(burstPromises);

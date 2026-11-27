@@ -279,8 +279,7 @@ export class SettlementEngine {
     for (const bankId of sortedBankIds) {
       const pos = bankPositionsMap.get(bankId)!;
       pos.net_paise = pos.credits_paise - pos.debits_paise;
-      pos.position_type =
-        pos.net_paise > 0 ? "RECEIVABLE" : pos.net_paise < 0 ? "PAYABLE" : "FLAT";
+      pos.position_type = pos.net_paise > 0 ? "RECEIVABLE" : pos.net_paise < 0 ? "PAYABLE" : "FLAT";
       netSumAcrossBanksPaise += pos.net_paise;
       bankPositions.push(pos);
     }
@@ -510,16 +509,11 @@ export class SettlementEngine {
   /**
    * Interface: `GET /cycles/{id}/files`
    */
-  public getCycleFiles(
-    cycleId: string,
-    version?: number
-  ): SettlementCycleRunResult | undefined {
+  public getCycleFiles(cycleId: string, version?: number): SettlementCycleRunResult | undefined {
     const cycleRow = (
       version !== undefined
         ? this.db
-            .prepare(
-              `SELECT * FROM settlement_cycles WHERE cycle_id = ? AND version = ?`
-            )
+            .prepare(`SELECT * FROM settlement_cycles WHERE cycle_id = ? AND version = ?`)
             .get(cycleId, version)
         : this.db
             .prepare(
@@ -568,9 +562,7 @@ export class SettlementEngine {
 
   public listCycleVersions(cycleId: string): number[] {
     const rows = this.db
-      .prepare(
-        `SELECT version FROM settlement_cycles WHERE cycle_id = ? ORDER BY version ASC`
-      )
+      .prepare(`SELECT version FROM settlement_cycles WHERE cycle_id = ? ORDER BY version ASC`)
       .all(cycleId) as Array<{ version: number }>;
     return rows.map((r) => r.version);
   }

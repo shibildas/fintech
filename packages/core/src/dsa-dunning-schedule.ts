@@ -35,9 +35,7 @@ export function buildDunningSchedule(params: {
     attemptNumber: idx + 1,
     offsetDays,
     retryExecutionKey: `${params.baseExecutionKey}:retry:${idx + 1}`,
-    scheduledAtIso: new Date(
-      params.failedAtMs + offsetDays * 24 * 60 * 60 * 1000
-    ).toISOString(),
+    scheduledAtIso: new Date(params.failedAtMs + offsetDays * 24 * 60 * 60 * 1000).toISOString(),
   }));
 
   return {

@@ -45,9 +45,7 @@ export class MandateAggregateCapChecker {
  * Sweep-line algorithm in O(N log N) computing the peak simultaneous scheduled amount
  * across overlapping `[startMs, endMs)` debit execution windows.
  */
-export function computePeakConcurrentWindowAmount(
-  intervals: ScheduledDebitInterval[]
-): number {
+export function computePeakConcurrentWindowAmount(intervals: ScheduledDebitInterval[]): number {
   const events: Array<{ timeMs: number; deltaPaise: number }> = [];
   for (const iv of intervals) {
     if (iv.endMs <= iv.startMs) {

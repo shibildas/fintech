@@ -1,6 +1,7 @@
 # About This Project & Author
 
 ## About the Repository
+
 **`fintech-infrastructure-stack`** is an end-to-end engineering build of core payments and financial infrastructure systems, modeled after real-world production architectures (NPCI UPI, ISO 8583 switches, Razorpay/Stripe/Juspay gateways, and real-time fraud/risk engines).
 
 Rather than building thin CRUD wrappers around third-party APIs, every component is implemented from first principles with strict financial invariants:
@@ -14,6 +15,7 @@ Rather than building thin CRUD wrappers around third-party APIs, every component
 ---
 
 ## Engineering Stack
+
 - **Runtime**: Node.js 24 (native TypeScript execution, `node:sqlite`, `node:crypto`, `node:test`)
 - **Architecture**: npm workspaces monorepo (`@fintech/core`, `@fintech/project1-switch`, `@fintech/project2-gateway`, `@fintech/project3-consumer-app`)
 - **CI**: GitHub Actions (`.github/workflows/test.yml`) running full automated verification on `main`
@@ -21,4 +23,5 @@ Rather than building thin CRUD wrappers around third-party APIs, every component
 ---
 
 ## Author
+
 Built by **Shibil Das** as part of a 30-day deep-systems build focused on high-reliability payments infrastructure, distributed systems, and backend engineering.

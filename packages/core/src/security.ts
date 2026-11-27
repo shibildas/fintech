@@ -31,10 +31,7 @@ export function signServiceMessage(
   sharedSecret: string
 ): string {
   const payloadToSign = `${timestampIso}.${rawBody}`;
-  return crypto
-    .createHmac("sha256", sharedSecret)
-    .update(payloadToSign, "utf8")
-    .digest("hex");
+  return crypto.createHmac("sha256", sharedSecret).update(payloadToSign, "utf8").digest("hex");
 }
 
 /**
@@ -106,10 +103,7 @@ export function maskAccountNumber(accountNumber: string): string {
  * Constant-time bearer token comparison using SHA-256 digests so token lengths
  * and byte positions never leak via timing side-channels.
  */
-export function timingSafeTokenEqual(
-  provided: string | undefined,
-  expected: string
-): boolean {
+export function timingSafeTokenEqual(provided: string | undefined, expected: string): boolean {
   if (!provided) return false;
   const a = crypto.createHash("sha256").update(provided).digest();
   const b = crypto.createHash("sha256").update(expected).digest();
@@ -162,12 +156,8 @@ export function redactSensitiveData<T>(input: T): T {
     for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
       if (SENSITIVE_KEYS.has(key.toLowerCase())) {
         redacted[key] = "[REDACTED]";
-      } else if (
-        key.toLowerCase() === "account_number" ||
-        key.toLowerCase() === "accountnumber"
-      ) {
-        redacted[key] =
-          typeof value === "string" ? maskAccountNumber(value) : "[REDACTED]";
+      } else if (key.toLowerCase() === "account_number" || key.toLowerCase() === "accountnumber") {
+        redacted[key] = typeof value === "string" ? maskAccountNumber(value) : "[REDACTED]";
       } else {
         redacted[key] = redactSensitiveData(value);
       }

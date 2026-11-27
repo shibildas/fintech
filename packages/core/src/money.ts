@@ -35,9 +35,7 @@ export function assertPositivePaise(
 ): asserts amount is number {
   assertPaiseInteger(amount, fieldName);
   if (amount <= 0) {
-    throw new MoneyError(
-      `Rule 1 Violation: ${fieldName} must be > 0 paise, received ${amount}`
-    );
+    throw new MoneyError(`Rule 1 Violation: ${fieldName} must be > 0 paise, received ${amount}`);
   }
 }
 
@@ -108,8 +106,7 @@ export function splitMdrAndGst(
 ): MdrSplitResult {
   assertPositivePaise(grossPaise, "grossPaise");
   const mdrFeePaise = computeBasisPointsPaise(grossPaise, mdrBps);
-  const gstOnFeePaise =
-    mdrFeePaise > 0 ? computeBasisPointsPaise(mdrFeePaise, gstBps) : 0;
+  const gstOnFeePaise = mdrFeePaise > 0 ? computeBasisPointsPaise(mdrFeePaise, gstBps) : 0;
   const merchantNetPaise = grossPaise - mdrFeePaise - gstOnFeePaise;
 
   if (mdrFeePaise + gstOnFeePaise + merchantNetPaise !== grossPaise) {

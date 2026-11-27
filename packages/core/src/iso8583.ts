@@ -74,14 +74,7 @@ export class Iso8583ValidationError extends Error {
 
 const VALID_MTIS = new Set<MTI>(["0200", "0210", "0420", "0430", "0100", "0110"]);
 const RESPONSE_MTIS = new Set<MTI>(["0210", "0430", "0110"]);
-const VALID_PROCESSING_CODES = new Set<ProcessingCode>([
-  "PAY",
-  "BAL",
-  "CHK",
-  "REV",
-  "COL",
-  "MND",
-]);
+const VALID_PROCESSING_CODES = new Set<ProcessingCode>(["PAY", "BAL", "CHK", "REV", "COL", "MND"]);
 
 /**
  * Mints a standard 12-digit Retrieval Reference Number (RRN) in `YDDDHHSSSSSS` format:
@@ -162,15 +155,10 @@ export function validateIso8583Envelope(msg: Iso8583MessageEnvelope): void {
   }
 
   if (!msg.transmission_time || Number.isNaN(Date.parse(msg.transmission_time))) {
-    throw new Iso8583ValidationError(
-      `Invalid transmission_time: "${msg.transmission_time}"`
-    );
+    throw new Iso8583ValidationError(`Invalid transmission_time: "${msg.transmission_time}"`);
   }
 
-  if (
-    msg.account_reference !== undefined &&
-    !/^XXXX\d{4}$/.test(msg.account_reference)
-  ) {
+  if (msg.account_reference !== undefined && !/^XXXX\d{4}$/.test(msg.account_reference)) {
     throw new Iso8583ValidationError(
       `Rule 10 Violation: account_reference outside bank core must be masked as XXXX1234, received "${msg.account_reference}"`
     );
@@ -183,9 +171,7 @@ export function validateIso8583Envelope(msg: Iso8583MessageEnvelope): void {
       );
     }
   } else if (msg.response_code !== undefined) {
-    throw new Iso8583ValidationError(
-      `Request MTI ${msg.mti} must not carry a response_code`
-    );
+    throw new Iso8583ValidationError(`Request MTI ${msg.mti} must not carry a response_code`);
   }
 
   if (!msg.signature || typeof msg.signature !== "string") {

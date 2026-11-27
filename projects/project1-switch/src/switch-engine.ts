@@ -18,10 +18,7 @@ import {
   type IsoResponseCode,
   type SwitchTransactionState,
 } from "../../../packages/core/src/index.ts";
-import {
-  BankCoreSimulator,
-  BankTimeoutSimulatedError,
-} from "./bank-core.ts";
+import { BankCoreSimulator, BankTimeoutSimulatedError } from "./bank-core.ts";
 import { PspSimulator } from "./psp-simulator.ts";
 
 /**
@@ -509,13 +506,7 @@ export class CentralSwitch {
       };
     }
 
-    return this.continueFromDebitRequest(
-      hop1Envelope,
-      payerPsp,
-      payeePsp,
-      rawPin,
-      now
-    );
+    return this.continueFromDebitRequest(hop1Envelope, payerPsp, payeePsp, rawPin, now);
   }
 
   /**
@@ -610,7 +601,7 @@ export class CentralSwitch {
     });
 
     let debitApproved = false;
-    let debitResponseCode: IsoResponseCode = "68";
+    let debitResponseCode: IsoResponseCode;
 
     try {
       const debitRes = await this.withBankTimeout(
@@ -817,11 +808,7 @@ export class CentralSwitch {
     }
 
     const attemptCreditOnce = async (): Promise<boolean> => {
-      if (
-        !beneficiaryBank ||
-        !beneficiaryParticipant ||
-        beneficiaryParticipant.status === "DOWN"
-      ) {
+      if (!beneficiaryBank || !beneficiaryParticipant || beneficiaryParticipant.status === "DOWN") {
         return false;
       }
 
@@ -925,13 +912,7 @@ export class CentralSwitch {
       );
 
       // HOP 6 (OUT): Switch -> Payer PSP (MTI 0210, Response Code 00)
-      const successResp = this.buildPspResponse(
-        baseEnvelope,
-        "0210",
-        "00",
-        payerPspId,
-        now
-      );
+      const successResp = this.buildPspResponse(baseEnvelope, "0210", "00", payerPspId, now);
       this.logMessageHop({
         transactionId: txId,
         rrn,
@@ -1010,13 +991,7 @@ export class CentralSwitch {
       "91"
     );
 
-    const revPspResp = this.buildPspResponse(
-      baseEnvelope,
-      "0210",
-      "91",
-      payerPspId,
-      now
-    );
+    const revPspResp = this.buildPspResponse(baseEnvelope, "0210", "91", payerPspId, now);
     this.logMessageHop({
       transactionId: txId,
       rrn,
@@ -1120,7 +1095,6 @@ export class CentralSwitch {
     const resumed: SwitchTransactionRecord[] = [];
 
     for (const tx of stuckRows) {
-      const payerPsp = this.psps.get(tx.payer_psp_id)!;
       const payeePsp = this.psps.get(tx.payee_psp_id!)!;
       const remitterBank = this.banks.get(tx.remitter_bank_id)!;
       const beneficiaryBank = this.banks.get(tx.beneficiary_bank_id!);
@@ -1395,22 +1369,9 @@ export class CentralSwitch {
              updated_at = ?
          WHERE rrn = ?`
       )
-      .run(
-        toState,
-        responseCode ?? null,
-        settlementCycleId ?? null,
-        nowIso,
-        rrn
-      );
+      .run(toState, responseCode ?? null, settlementCycleId ?? null, nowIso, rrn);
 
-    this.recordStateChange(
-      transactionId,
-      rrn,
-      current.state,
-      toState,
-      reason,
-      nowIso
-    );
+    this.recordStateChange(transactionId, rrn, current.state, toState, reason, nowIso);
   }
 
   private recordStateChange(
@@ -1427,15 +1388,7 @@ export class CentralSwitch {
           id, transaction_id, rrn, from_state, to_state, reason, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(
-        `STH-${crypto.randomUUID()}`,
-        transactionId,
-        rrn,
-        fromState,
-        toState,
-        reason,
-        nowIso
-      );
+      .run(`STH-${crypto.randomUUID()}`, transactionId, rrn, fromState, toState, reason, nowIso);
   }
 
   private logMessageHop(params: {
@@ -1500,11 +1453,7 @@ export class CentralSwitch {
     bankSecret: string
   ): Iso8583MessageEnvelope {
     const rawBody = JSON.stringify(unsigned);
-    const signature = signServiceMessage(
-      rawBody,
-      unsigned.transmission_time,
-      bankSecret
-    );
+    const signature = signServiceMessage(rawBody, unsigned.transmission_time, bankSecret);
     return { ...unsigned, signature };
   }
 
@@ -1543,11 +1492,7 @@ export class CentralSwitch {
     return { ...unsigned, signature };
   }
 
-  private async withBankTimeout<T>(
-    promise: Promise<T>,
-    bankId: string,
-    rrn: string
-  ): Promise<T> {
+  private async withBankTimeout<T>(promise: Promise<T>, bankId: string, rrn: string): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {

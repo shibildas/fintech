@@ -49,15 +49,15 @@ flowchart LR
 Merchants sign API payloads using HMAC-SHA256 with their `api_secret` (supports zero-downtime key rotation with configurable overlap window):
 
 ```ts
-import { signServiceMessage } from '@fintech/core';
+import { signServiceMessage } from "@fintech/core";
 
 const payload = {
-  merchant_id: 'merch_acme01',
+  merchant_id: "merch_acme01",
   amount_paise: 150000, // ₹1,500.00 in integer paise
-  currency: 'INR',
-  receipt: 'rcpt_order_001',
-  capture_mode: 'AUTO',
-  idempotency_key: 'idem_9f8a7b6c',
+  currency: "INR",
+  receipt: "rcpt_order_001",
+  capture_mode: "AUTO",
+  idempotency_key: "idem_9f8a7b6c",
 };
 
 const { timestamp, signature } = signServiceMessage(payload, process.env.MERCHANT_API_SECRET!);
@@ -66,27 +66,28 @@ const { timestamp, signature } = signServiceMessage(payload, process.env.MERCHAN
 ### 3.2 Verifying Incoming Webhooks (`X-Gateway-Signature`)
 
 Every webhook request from `@fintech/project2-gateway` includes:
+
 - `X-Gateway-Event-Id`: Unique event ID (`evt_...`) for idempotent deduplication on the merchant server.
 - `X-Gateway-Timestamp`: Unix epoch milliseconds when the webhook was signed.
 - `X-Gateway-Signature`: HMAC-SHA256 signature computed over `<timestamp>.<raw_json_body>`.
 
 ```ts
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 export function verifyGatewayWebhook(
   rawBody: string,
   timestampHeader: string,
   signatureHeader: string,
-  webhookSecret: string,
+  webhookSecret: string
 ): boolean {
   const ageMs = Math.abs(Date.now() - Number(timestampHeader));
   if (ageMs > 5 * 60 * 1000) return false; // 5-minute replay window
 
-  const expected = createHmac('sha256', webhookSecret)
+  const expected = createHmac("sha256", webhookSecret)
     .update(`${timestampHeader}.${rawBody}`)
-    .digest('hex');
+    .digest("hex");
 
-  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(signatureHeader, 'hex'));
+  return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signatureHeader, "hex"));
 }
 ```
 

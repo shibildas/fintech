@@ -9,8 +9,18 @@ describe("Day 27 — Project 4: Printable Invoices, MRR/Churn Analytics & Revenu
     const merchantId = "merch_saas_pro";
 
     // Sub 1: New ₹499/mo + mid-cycle expansion +₹500/mo + ₹250 one-time proration
-    svc.recordMrrMovement({ merchantId, subscriptionId: "sub_1", eventType: "NEW", deltaPaise: 49_900 });
-    svc.recordMrrMovement({ merchantId, subscriptionId: "sub_1", eventType: "EXPANSION", deltaPaise: 50_000 });
+    svc.recordMrrMovement({
+      merchantId,
+      subscriptionId: "sub_1",
+      eventType: "NEW",
+      deltaPaise: 49_900,
+    });
+    svc.recordMrrMovement({
+      merchantId,
+      subscriptionId: "sub_1",
+      eventType: "EXPANSION",
+      deltaPaise: 50_000,
+    });
 
     const inv1 = svc.createDraftInvoice({
       merchantId,
@@ -25,8 +35,18 @@ describe("Day 27 — Project 4: Printable Invoices, MRR/Churn Analytics & Revenu
     await svc.markInvoicePaid({ invoiceId: inv1.id, paymentReference: "RRN-633510000001" });
 
     // Sub 2: New ₹1,000/mo then churned -₹1,000/mo -> invoice marked UNCOLLECTIBLE
-    svc.recordMrrMovement({ merchantId, subscriptionId: "sub_2", eventType: "NEW", deltaPaise: 100_000 });
-    svc.recordMrrMovement({ merchantId, subscriptionId: "sub_2", eventType: "CHURN", deltaPaise: 100_000 });
+    svc.recordMrrMovement({
+      merchantId,
+      subscriptionId: "sub_2",
+      eventType: "NEW",
+      deltaPaise: 100_000,
+    });
+    svc.recordMrrMovement({
+      merchantId,
+      subscriptionId: "sub_2",
+      eventType: "CHURN",
+      deltaPaise: 100_000,
+    });
 
     const inv2 = svc.createDraftInvoice({
       merchantId,

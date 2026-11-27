@@ -2,11 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { InjectableFakeClock } from "@fintech/core";
 import { createSeededGatewayTopology } from "@fintech/project2-gateway";
-import {
-  MandateService,
-  SubscriptionService,
-  DunningEngine,
-} from "../src/index.ts";
+import { MandateService, SubscriptionService, DunningEngine } from "../src/index.ts";
 
 function setupDunningEnv() {
   const clock = new InjectableFakeClock("2026-11-30T04:30:00.000Z");

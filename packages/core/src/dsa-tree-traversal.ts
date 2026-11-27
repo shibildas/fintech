@@ -72,8 +72,7 @@ export class MerkleAuditTree {
       const nodes = this.levels[level]!;
       const isRightNode = idx % 2 === 1;
       const siblingIdx = isRightNode ? idx - 1 : idx + 1;
-      const siblingHash =
-        siblingIdx < nodes.length ? nodes[siblingIdx]! : nodes[idx]!;
+      const siblingHash = siblingIdx < nodes.length ? nodes[siblingIdx]! : nodes[idx]!;
 
       proof.push({
         position: isRightNode ? "left" : "right",
@@ -334,10 +333,7 @@ export function validateBst(root: BinaryTreeNode<number> | null): boolean {
 /**
  * Returns the 1-indexed kth smallest value in a BST in O(H + k) time.
  */
-export function kthSmallestInBst(
-  root: BinaryTreeNode<number> | null,
-  k: number
-): number {
+export function kthSmallestInBst(root: BinaryTreeNode<number> | null, k: number): number {
   if (k <= 0) {
     throw new RangeError("k must be >= 1");
   }

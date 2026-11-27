@@ -6,7 +6,8 @@ import { renderFintechShellHtml } from "@fintech/core";
 export function renderGatewayUiHtml(): string {
   return renderFintechShellHtml({
     title: "Project 2 — Merchant Payment Gateway, PCI Vault & Webhooks",
-    subtitle: "Browser SubtleCrypto HMAC-SHA256 Auth • Isolated p2-vault.sqlite • Smart Failover • Webhooks & Payouts",
+    subtitle:
+      "Browser SubtleCrypto HMAC-SHA256 Auth • Isolated p2-vault.sqlite • Smart Failover • Webhooks & Payouts",
     activePort: 3002,
     bodyHtml: `
       <div class="auth-bar">

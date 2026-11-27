@@ -1,23 +1,13 @@
 import http from "node:http";
 import path from "node:path";
 import { ensureDataDir } from "@fintech/core";
-import {
-  CentralSwitch,
-  SwitchAdminApp,
-  createSeededTopology,
-} from "@fintech/project1-switch";
-import {
-  createPersistentGatewayContext,
-  GatewayHttpServer,
-} from "@fintech/project2-gateway";
+import { CentralSwitch, SwitchAdminApp, createSeededTopology } from "@fintech/project1-switch";
+import { createPersistentGatewayContext, GatewayHttpServer } from "@fintech/project2-gateway";
 import {
   createPersistentConsumerContext,
   ConsumerHttpServer,
 } from "@fintech/project3-consumer-app";
-import {
-  createPersistentMandatesContext,
-  MandatesHttpServer,
-} from "@fintech/project4-mandates";
+import { createPersistentMandatesContext, MandatesHttpServer } from "@fintech/project4-mandates";
 
 type ServiceTarget = "p1" | "p2" | "p3" | "p4";
 
@@ -29,7 +19,10 @@ function parseTargets(argv: string[]): Set<ServiceTarget> {
     return new Set<ServiceTarget>(["p1", "p2", "p3", "p4"]);
   }
 
-  const raw = onlyArg.slice("--only=".length).split(",").map((s) => s.trim());
+  const raw = onlyArg
+    .slice("--only=".length)
+    .split(",")
+    .map((s) => s.trim());
   const targets = new Set<ServiceTarget>();
   for (const item of raw) {
     if (item === "p1" || item === "p2" || item === "p3" || item === "p4") {
@@ -55,6 +48,11 @@ function startSwitchServer(port: number): Promise<http.Server> {
   sw.registerPsp(topology.psps.PSP1);
   sw.registerPsp(topology.psps.PSP2);
 
+  sw.db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
+  topology.banks.BANKA.db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
+  topology.banks.BANKB.db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
+  topology.banks.BANKC.db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
+
   const adminToken = process.env.P1_ADMIN_TOKEN ?? "p1_dev_admin_token_2026";
   const app = new SwitchAdminApp({ sw, topology, adminToken });
   const server = app.createHttpServer();
@@ -62,7 +60,9 @@ function startSwitchServer(port: number): Promise<http.Server> {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", () => {
-      console.log(`[p1:switch]   http://127.0.0.1:${port}/  (X-Admin-Token: ${adminToken} | Seeded PINs: anita=1234, rahul=5678)`);
+      console.log(
+        `[p1:switch]   http://127.0.0.1:${port}/  (X-Admin-Token: ${adminToken} | Seeded PINs: anita=1234, rahul=5678)`
+      );
       resolve(server);
     });
   });
@@ -75,7 +75,9 @@ function startGatewayServer(port: number): Promise<http.Server> {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", () => {
-      console.log(`[p2:gateway]  http://127.0.0.1:${port}/  (X-Key-Id: ${ctx.seededKeyId} | API Secret: ${ctx.seededApiSecret})`);
+      console.log(
+        `[p2:gateway]  http://127.0.0.1:${port}/  (X-Key-Id: ${ctx.seededKeyId} | API Secret: ${ctx.seededApiSecret})`
+      );
       resolve(server);
     });
   });
@@ -88,7 +90,9 @@ function startConsumerAppServer(port: number): Promise<http.Server> {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", () => {
-      console.log(`[p3:consumer] http://127.0.0.1:${port}/  (X-Ops-Token: ${ctx.opsToken} | Mock SMS OTP: 123456)`);
+      console.log(
+        `[p3:consumer] http://127.0.0.1:${port}/  (X-Ops-Token: ${ctx.opsToken} | Mock SMS OTP: 123456)`
+      );
       resolve(server);
     });
   });
@@ -101,7 +105,9 @@ function startMandatesServer(port: number): Promise<http.Server> {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", () => {
-      console.log(`[p4:mandates] http://127.0.0.1:${port}/  (X-Merchant-Token: ${ctx.merchantToken} | AutoPay PIN: 1234 | e-NACH OTP: 654321)`);
+      console.log(
+        `[p4:mandates] http://127.0.0.1:${port}/  (X-Merchant-Token: ${ctx.merchantToken} | AutoPay PIN: 1234 | e-NACH OTP: 654321)`
+      );
       resolve(server);
     });
   });
@@ -122,7 +128,9 @@ async function main(): Promise<void> {
   if (targets.has("p3")) servers.push(await startConsumerAppServer(consumerPort));
   if (targets.has("p4")) servers.push(await startMandatesServer(mandatesPort));
 
-  console.log(`\nFintech stack orchestrator ready (SQLite persisted under ${DATA_DIR}). Press Ctrl+C to stop.`);
+  console.log(
+    `\nFintech stack orchestrator ready (SQLite persisted under ${DATA_DIR}). Press Ctrl+C to stop.`
+  );
 
   let isShuttingDown = false;
   const shutdown = (signal: string) => {

@@ -237,8 +237,7 @@ describe("Day 1 Core Build — 19 Common Rules & ISO 8583 Foundation", () => {
           requestPayload: { amount: 999900, payer: "anita@psp1", payee: "shop@psp2" },
           handler: () => ({ statusCode: 200, body: {} }),
         }),
-      (err: unknown) =>
-        err instanceof IdempotencyConflictError && err.statusCode === 409
+      (err: unknown) => err instanceof IdempotencyConflictError && err.statusCode === 409
     );
   });
 

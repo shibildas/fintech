@@ -123,9 +123,7 @@ export class BankCoreSimulator {
       bank_id: this.config.bankId,
       status: this.chaos.forceDown
         ? "DOWN"
-        : this.chaos.errorRatePercent > 0 ||
-            this.chaos.latencyMs > 1000 ||
-            this.chaos.debitThenHang
+        : this.chaos.errorRatePercent > 0 || this.chaos.latencyMs > 1000 || this.chaos.debitThenHang
           ? "DEGRADED"
           : "UP",
       chaos: this.getChaosConfig(),
@@ -157,7 +155,7 @@ export class BankCoreSimulator {
     });
   }
 
-  private async applyPreOperationChaos(rrn: string): Promise<IsoResponseCode | null> {
+  private async applyPreOperationChaos(_rrn: string): Promise<IsoResponseCode | null> {
     if (this.chaos.latencyMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.chaos.latencyMs));
     }
@@ -359,12 +357,7 @@ export class BankCoreSimulator {
       this.metrics.reversalSuccess += 1;
     }
 
-    return this.buildResponseEnvelope(
-      params.envelope,
-      "0430",
-      result.response_code,
-      now
-    );
+    return this.buildResponseEnvelope(params.envelope, "0430", result.response_code, now);
   }
 
   /**
@@ -392,12 +385,8 @@ export class BankCoreSimulator {
 
     const opType = params.operation ?? "DEBIT";
     const row = this.db
-      .prepare(
-        `SELECT response_code FROM rrn_operations WHERE rrn = ? AND operation = ?`
-      )
-      .get(params.envelope.rrn, opType) as
-      | { response_code: IsoResponseCode }
-      | undefined;
+      .prepare(`SELECT response_code FROM rrn_operations WHERE rrn = ? AND operation = ?`)
+      .get(params.envelope.rrn, opType) as { response_code: IsoResponseCode } | undefined;
 
     if (!row) {
       return {
@@ -408,12 +397,7 @@ export class BankCoreSimulator {
     }
 
     return {
-      envelope: this.buildResponseEnvelope(
-        params.envelope,
-        "0110",
-        row.response_code,
-        now
-      ),
+      envelope: this.buildResponseEnvelope(params.envelope, "0110", row.response_code, now),
       found: true,
       original_response_code: row.response_code,
     };
@@ -479,9 +463,7 @@ export class BankCoreSimulator {
       created_at: string;
     }>;
 
-    const reversedRrns = new Set(
-      ops.filter((o) => o.operation === "REVERSAL").map((o) => o.rrn)
-    );
+    const reversedRrns = new Set(ops.filter((o) => o.operation === "REVERSAL").map((o) => o.rrn));
 
     const report: BankEodReportRow[] = [];
 
@@ -513,10 +495,7 @@ export class BankCoreSimulator {
           account_number_masked: maskAccountNumber(customerPosting.account_number),
           direction: op.operation,
           amount_paise: customerPosting.amount_paise,
-          status:
-            op.operation === "DEBIT" && reversedRrns.has(op.rrn)
-              ? "REVERSED"
-              : "SUCCESS",
+          status: op.operation === "DEBIT" && reversedRrns.has(op.rrn) ? "REVERSED" : "SUCCESS",
           timestamp: customerPosting.created_at,
         });
       }

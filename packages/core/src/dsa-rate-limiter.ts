@@ -34,11 +34,7 @@ export class TokenBucketRateLimiter {
     this.refillTokensPerSecond = refillTokensPerSecond;
   }
 
-  public tryConsume(
-    participantId: string,
-    cost = 1,
-    nowMs = Date.now()
-  ): RateLimitCheckResult {
+  public tryConsume(participantId: string, cost = 1, nowMs = Date.now()): RateLimitCheckResult {
     let bucket = this.buckets.get(participantId);
     if (!bucket) {
       bucket = { tokens: this.capacity, lastRefillMs: nowMs };

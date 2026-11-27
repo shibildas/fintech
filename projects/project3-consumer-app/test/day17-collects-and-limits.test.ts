@@ -3,10 +3,7 @@ import assert from "node:assert/strict";
 import { SlidingWindowDistinctCounter } from "@fintech/core";
 import { createSeededTopology, CentralSwitch } from "@fintech/project1-switch";
 import { ConsumerPspBackend } from "../src/psp-backend.ts";
-import {
-  CollectRequestEngine,
-  PspLimitProfileEngine,
-} from "../src/collect-and-limits.ts";
+import { CollectRequestEngine, PspLimitProfileEngine } from "../src/collect-and-limits.ts";
 
 function setupCollectEnv() {
   const p1 = createSeededTopology();
@@ -128,8 +125,18 @@ describe("Day 17 — Project 3: Collect Requests, Fan-Out Abuse Controls & Pre-S
     );
 
     // Per-payer rate limit (max 2/hour)
-    collects.createCollectRequest({ requesterVpa: "shop@psp2", payerVpa: "anita@psp1", amountPaise: 1000, now });
-    collects.createCollectRequest({ requesterVpa: "shop@psp2", payerVpa: "anita@psp1", amountPaise: 1000, now });
+    collects.createCollectRequest({
+      requesterVpa: "shop@psp2",
+      payerVpa: "anita@psp1",
+      amountPaise: 1000,
+      now,
+    });
+    collects.createCollectRequest({
+      requesterVpa: "shop@psp2",
+      payerVpa: "anita@psp1",
+      amountPaise: 1000,
+      now,
+    });
     assert.throws(
       () =>
         collects.createCollectRequest({

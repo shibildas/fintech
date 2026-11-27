@@ -41,16 +41,8 @@ export class TtlLruCache<K, V> {
     }
     this.capacity = capacity;
     this.defaultTtlMs = defaultTtlMs;
-    this.head = new LruNode<K, V>(
-      undefined as unknown as K,
-      undefined as unknown as V,
-      0
-    );
-    this.tail = new LruNode<K, V>(
-      undefined as unknown as K,
-      undefined as unknown as V,
-      0
-    );
+    this.head = new LruNode<K, V>(undefined as unknown as K, undefined as unknown as V, 0);
+    this.tail = new LruNode<K, V>(undefined as unknown as K, undefined as unknown as V, 0);
     this.head.next = this.tail;
     this.tail.prev = this.head;
   }

@@ -10,10 +10,7 @@ import {
 import { renderSwitchAdminHtml } from "./admin-ui.ts";
 import { CentralSwitch } from "./switch-engine.ts";
 import { SettlementEngine } from "./settlement-engine.ts";
-import {
-  ReconciliationEngine,
-  type ExceptionResolutionAction,
-} from "./reconciliation-engine.ts";
+import { ReconciliationEngine, type ExceptionResolutionAction } from "./reconciliation-engine.ts";
 import type { SeededProject1Topology } from "./seed.ts";
 import type { BankChaosConfig } from "./bank-core.ts";
 
@@ -83,9 +80,7 @@ export class SwitchAdminApp {
         );
       }
     }
-    const rawRole = (headers["x-role"] ?? headers["X-Role"] ?? "operator")
-      .toLowerCase()
-      .trim();
+    const rawRole = (headers["x-role"] ?? headers["X-Role"] ?? "operator").toLowerCase().trim();
     const actorId = headers["x-actor-id"] ?? headers["X-Actor-Id"] ?? `user-${rawRole}`;
 
     if (rawRole !== "operator" && rawRole !== "admin") {
@@ -109,8 +104,7 @@ export class SwitchAdminApp {
   public async dispatch(req: ApiRequest): Promise<ApiResponse> {
     const startMs = performance.now();
     const headers = req.headers ?? {};
-    const requestId =
-      headers["x-request-id"] ?? `REQ-${crypto.randomUUID().slice(0, 8)}`;
+    const requestId = headers["x-request-id"] ?? `REQ-${crypto.randomUUID().slice(0, 8)}`;
     const url = new URL(req.path, "http://localhost");
     const pathname = url.pathname;
     const routeKey = `${req.method.toUpperCase()} ${pathname}`;
@@ -136,8 +130,7 @@ export class SwitchAdminApp {
         },
       };
     } catch (err: unknown) {
-      const statusCode =
-        (err as { statusCode?: number })?.statusCode ?? 500;
+      const statusCode = (err as { statusCode?: number })?.statusCode ?? 500;
       const message = err instanceof Error ? err.message : String(err);
       this.recordRouteMetric(routeKey, performance.now() - startMs, false);
       this.logStructured("ERROR", requestId, routeKey, statusCode, { error: message });
@@ -281,8 +274,7 @@ export class SwitchAdminApp {
     if (method === "GET" && txMatch) {
       this.requireRole(headers, "operator");
       const key = decodeURIComponent(txMatch[1]);
-      const tx =
-        this.sw.getTransactionByRrn(key) ?? this.sw.getTransactionById(key);
+      const tx = this.sw.getTransactionByRrn(key) ?? this.sw.getTransactionById(key);
       if (!tx) {
         return this.json(404, { error: `Transaction "${key}" not found` });
       }
@@ -305,9 +297,7 @@ export class SwitchAdminApp {
             )
             .all(q, q, `%${q}%`, `%${q}%`, q)
         : this.sw.db
-            .prepare(
-              `SELECT * FROM switch_transactions ORDER BY created_at DESC LIMIT 100`
-            )
+            .prepare(`SELECT * FROM switch_transactions ORDER BY created_at DESC LIMIT 100`)
             .all();
       return this.json(200, { transactions: rows });
     }
@@ -316,19 +306,12 @@ export class SwitchAdminApp {
     const chaosMatch = pathname.match(/^\/participants\/([^/]+)\/chaos$/);
     if (method === "PUT" && chaosMatch) {
       const { actorId } = this.requireRole(headers, "admin");
-      const bankId = decodeURIComponent(chaosMatch[1]).toUpperCase() as
-        | "BANKA"
-        | "BANKB"
-        | "BANKC";
+      const bankId = decodeURIComponent(chaosMatch[1]).toUpperCase() as "BANKA" | "BANKB" | "BANKC";
       const bank = this.topology.banks[bankId];
       if (!bank) {
         return this.json(404, { error: `Bank "${bankId}" not found` });
       }
-      const updated = bank.setChaosConfig(
-        body as Partial<BankChaosConfig>,
-        actorId,
-        requestId
-      );
+      const updated = bank.setChaosConfig(body as Partial<BankChaosConfig>, actorId, requestId);
       return this.json(200, { bank_id: bankId, chaos: updated });
     }
 
@@ -366,16 +349,14 @@ export class SwitchAdminApp {
     if (method === "POST" && (reconMatch || pathname === "/reconcile")) {
       const { actorId } = this.requireRole(headers, "operator");
       const cycleId = reconMatch ? decodeURIComponent(reconMatch[1]) : this.sw.activeCycleId;
-      const customReports = (body as { bankReports?: unknown[] } | undefined)
-        ?.bankReports;
-      const bankReports =
-        (customReports as ReturnType<
-          typeof this.topology.banks.BANKA.generateEodReport
-        >) ?? [
-          ...this.topology.banks.BANKA.generateEodReport(),
-          ...this.topology.banks.BANKB.generateEodReport(),
-          ...this.topology.banks.BANKC.generateEodReport(),
-        ];
+      const customReports = (body as { bankReports?: unknown[] } | undefined)?.bankReports;
+      const bankReports = (customReports as ReturnType<
+        typeof this.topology.banks.BANKA.generateEodReport
+      >) ?? [
+        ...this.topology.banks.BANKA.generateEodReport(),
+        ...this.topology.banks.BANKB.generateEodReport(),
+        ...this.topology.banks.BANKC.generateEodReport(),
+      ];
 
       const result = this.reconciliation.runThreeWayReconciliation({
         cycleId,
@@ -410,13 +391,10 @@ export class SwitchAdminApp {
       }
 
       const tx = this.sw.getTransactionByRrn(exc.rrn);
-      const beneBankId = (exc.beneficiary_bank_id ??
-        tx?.beneficiary_bank_id) as "BANKA" | "BANKB" | "BANKC" | undefined;
+      const beneBankId = (exc.beneficiary_bank_id ?? tx?.beneficiary_bank_id) as
+        "BANKA" | "BANKB" | "BANKC" | undefined;
       const remBankId = (exc.remitter_bank_id ?? tx?.remitter_bank_id) as
-        | "BANKA"
-        | "BANKB"
-        | "BANKC"
-        | undefined;
+        "BANKA" | "BANKB" | "BANKC" | undefined;
 
       const beneAcct = tx?.payee_vpa
         ? (
@@ -471,19 +449,14 @@ export class SwitchAdminApp {
     > = {};
 
     for (const [routeKey, counts] of this.routeCounts.entries()) {
-      const latencies = [...(this.routeLatenciesMs.get(routeKey) ?? [])].sort(
-        (a, b) => a - b
-      );
-      const p95Idx =
-        latencies.length > 0 ? Math.floor(latencies.length * 0.95) : 0;
+      const latencies = [...(this.routeLatenciesMs.get(routeKey) ?? [])].sort((a, b) => a - b);
+      const p95Idx = latencies.length > 0 ? Math.floor(latencies.length * 0.95) : 0;
       const p95 = latencies.length > 0 ? latencies[p95Idx] : 0;
 
       routes[routeKey] = {
         ...counts,
         success_rate_percent:
-          counts.total === 0
-            ? 100
-            : Math.round((counts.success / counts.total) * 10000) / 100,
+          counts.total === 0 ? 100 : Math.round((counts.success / counts.total) * 10000) / 100,
         p95_latency_ms: Math.round(p95 * 100) / 100,
       };
     }
@@ -498,11 +471,7 @@ export class SwitchAdminApp {
     };
   }
 
-  private recordRouteMetric(
-    routeKey: string,
-    durationMs: number,
-    ok: boolean
-  ): void {
+  private recordRouteMetric(routeKey: string, durationMs: number, ok: boolean): void {
     const counts = this.routeCounts.get(routeKey) ?? {
       total: 0,
       success: 0,
@@ -564,7 +533,7 @@ export class SwitchAdminApp {
         headers[k] = Array.isArray(v) ? v[0] : v;
       }
 
-      let parsedBody: unknown = undefined;
+      let parsedBody: unknown;
       try {
         const { json } = await readRawAndJsonBody(req);
         parsedBody = json;

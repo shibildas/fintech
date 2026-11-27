@@ -1,9 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  findPayoutSubsetSum,
-  verifyBatchFeeRoundingInvariant,
-} from "@fintech/core";
+import { findPayoutSubsetSum, verifyBatchFeeRoundingInvariant } from "@fintech/core";
 import { createSeededGatewayTopology } from "../src/index.ts";
 
 describe("Day 13 — T+1 Payouts, Rolling Reserves, Nightly Ledger Check & DP Subset-Sum Reconciliation", () => {

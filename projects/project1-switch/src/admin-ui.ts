@@ -7,7 +7,8 @@ export function renderSwitchAdminHtml(activeCycleId: string): string {
   const safeCycleJson = JSON.stringify(activeCycleId);
   return renderFintechShellHtml({
     title: "Project 1 — UPI Central Switch, Settlement & 3-Way Recon",
-    subtitle: "ISO 8583 6-Hop Pay • Chaos Injection • T+1 Multilateral Netting • Persistent .data/ SQLite",
+    subtitle:
+      "ISO 8583 6-Hop Pay • Chaos Injection • T+1 Multilateral Netting • Persistent .data/ SQLite",
     activePort: 3001,
     bodyHtml: `
       <div class="auth-bar">

@@ -1,7 +1,9 @@
 # Project 1 — UPI-Style Central Switch, Bank Cores, T+1 Settlement & Three-Way Reconciliation
 
 ## What This Proves
+
 This system implements the central payment switch sitting between Payment Service Providers (`PSP1`, `PSP2`) and Bank Cores (`BANKA`, `BANKB`, `BANKC`). It demonstrates:
+
 - **ISO 8583-modelled message routing** (`MTI 0200/0210` financial pay, `0420/0430` reversal, `0100/0110` balance & status check `CHK`) with `STAN`, 12-digit Switch-minted `RRN`, and service-to-service HMAC-SHA256 signing (`<5m` replay window).
 - **Exactly-once debit** under concurrent duplicate bursts (`SingleFlightIdempotencyCache` + SQLite `rrn_operations` & `BEGIN IMMEDIATE` atomic double-entry ledger transactions in integer `paise`).
 - **Honest distributed failure handling**: Remitter timeout $\rightarrow$ `DEBIT_UNKNOWN` $\rightarrow$ `CHK` status probe; Beneficiary failure $\rightarrow$ `CREDIT_PENDING` retry schedule $\rightarrow$ `MTI 0420` auto-reversal; late `0210 ("00")` after reversal $\rightarrow$ **Deemed-Approved** conflict detection; mid-flight crash recovery on startup.
@@ -45,22 +47,22 @@ flowchart TD
 
 ## ISO 8583 Message Specification
 
-| Field | Meaning | Example |
-| :--- | :--- | :--- |
-| `mti` | `0200` financial req, `0210` financial resp, `0420` reversal req, `0430` reversal resp, `0100` enquiry, `0110` enquiry resp | `"0200"` |
-| `transaction_id` | Globally unique idempotency key minted by originating PSP | `"TXN-2026110700001"` |
-| `stan` | System trace audit number (6 digits, unique per sender per day) | `"004512"` |
-| `rrn` | Retrieval reference number (12 digits `YDDDHHSSSSSS`, minted by Switch) | `"631110004512"` |
-| `processing_code` | Operation (`PAY`, `BAL`, `CHK`, `REV`) | `"PAY"` |
-| `amount` | Integer paise (never floating-point) | `150000` (`= ₹1,500.00`) |
-| `currency` | ISO 4217 numeric code for INR | `"356"` |
-| `transmission_time` | ISO 8601 timestamp with timezone | `"2026-11-07T10:15:30.000Z"` |
-| `payer_vpa`, `payee_vpa` | VPA handles | `"anita@psp1"`, `"shop@psp2"` |
-| `payer_psp_id`, `payee_psp_id` | Resolved from VPA suffix | `"PSP1"`, `"PSP2"` |
-| `remitter_bank_id`, `beneficiary_bank_id` | Resolved from PSP VPA directory | `"BANKA"`, `"BANKC"` |
-| `account_reference` | Masked to last 4 digits outside bank core (Rule 10) | `"XXXX4521"` |
-| `response_code` | `00` approved, `51` insufficient funds, `91` bank down, `68` timeout, `12` invalid txn, `14` invalid VPA, `55` wrong PIN, `61` limit exceeded | `"00"` |
-| `signature` | `HMAC-SHA256(timestamp + "." + body, shared_secret)` | `"a94f..."` |
+| Field                                     | Meaning                                                                                                                                       | Example                       |
+| :---------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------- |
+| `mti`                                     | `0200` financial req, `0210` financial resp, `0420` reversal req, `0430` reversal resp, `0100` enquiry, `0110` enquiry resp                   | `"0200"`                      |
+| `transaction_id`                          | Globally unique idempotency key minted by originating PSP                                                                                     | `"TXN-2026110700001"`         |
+| `stan`                                    | System trace audit number (6 digits, unique per sender per day)                                                                               | `"004512"`                    |
+| `rrn`                                     | Retrieval reference number (12 digits `YDDDHHSSSSSS`, minted by Switch)                                                                       | `"631110004512"`              |
+| `processing_code`                         | Operation (`PAY`, `BAL`, `CHK`, `REV`)                                                                                                        | `"PAY"`                       |
+| `amount`                                  | Integer paise (never floating-point)                                                                                                          | `150000` (`= ₹1,500.00`)      |
+| `currency`                                | ISO 4217 numeric code for INR                                                                                                                 | `"356"`                       |
+| `transmission_time`                       | ISO 8601 timestamp with timezone                                                                                                              | `"2026-11-07T10:15:30.000Z"`  |
+| `payer_vpa`, `payee_vpa`                  | VPA handles                                                                                                                                   | `"anita@psp1"`, `"shop@psp2"` |
+| `payer_psp_id`, `payee_psp_id`            | Resolved from VPA suffix                                                                                                                      | `"PSP1"`, `"PSP2"`            |
+| `remitter_bank_id`, `beneficiary_bank_id` | Resolved from PSP VPA directory                                                                                                               | `"BANKA"`, `"BANKC"`          |
+| `account_reference`                       | Masked to last 4 digits outside bank core (Rule 10)                                                                                           | `"XXXX4521"`                  |
+| `response_code`                           | `00` approved, `51` insufficient funds, `91` bank down, `68` timeout, `12` invalid txn, `14` invalid VPA, `55` wrong PIN, `61` limit exceeded | `"00"`                        |
+| `signature`                               | `HMAC-SHA256(timestamp + "." + body, shared_secret)`                                                                                          | `"a94f..."`                   |
 
 ---
 
@@ -87,16 +89,18 @@ stateDiagram-v2
 
 ## Load Test Benchmark (Laptop — Node.js v24 + SQLite Double-Entry Ledger across 3 Banks)
 
-| Metric | Target Requirement | Achieved Result |
-| :--- | :--- | :--- |
-| **Sustained Throughput** | $\ge 100\text{ TPS}$ end-to-end across 3 banks | **`1,270 TPS`** |
-| **p95 End-to-End Latency** | $< 1,000\text{ ms}$ (no injected latency) | **`1.05 ms`** |
-| **Settlement Net Position Sum** | `0 paise` across `BANKA`, `BANKB`, `BANKC` | **`0 paise` (100% verified)** |
+| Metric                          | Target Requirement                             | Achieved Result               |
+| :------------------------------ | :--------------------------------------------- | :---------------------------- |
+| **Sustained Throughput**        | $\ge 100\text{ TPS}$ end-to-end across 3 banks | **`1,270 TPS`**               |
+| **p95 End-to-End Latency**      | $< 1,000\text{ ms}$ (no injected latency)      | **`1.05 ms`**                 |
+| **Settlement Net Position Sum** | `0 paise` across `BANKA`, `BANKB`, `BANKC`     | **`0 paise` (100% verified)** |
 
 ---
 
 ## How to Run Tests & Verify All 10 Acceptance Scenarios
+
 ```bash
 npm test
 ```
+
 Sample settlement CSVs and the reconciliation JSON report are checked into [`projects/project1-switch/samples/`](./samples/).

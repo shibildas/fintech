@@ -6,7 +6,8 @@ import { renderFintechShellHtml } from "@fintech/core";
 export function renderConsumerUiHtml(): string {
   return renderFintechShellHtml({
     title: "Project 3 — Consumer UPI App, Real-Time Risk Engine & Dispute Desk",
-    subtitle: "Browser Ed25519 Device Signing • Salted Nonce PIN Proof • 4 Pay Paths • Collects • Shadow Diff • Disputes",
+    subtitle:
+      "Browser Ed25519 Device Signing • Salted Nonce PIN Proof • 4 Pay Paths • Collects • Shadow Diff • Disputes",
     activePort: 3003,
     bodyHtml: `
       <div class="auth-bar">

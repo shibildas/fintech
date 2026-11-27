@@ -80,10 +80,8 @@ export class AuditLogger {
       action: params.action,
       entity_type: params.entityType,
       entity_id: params.entityId,
-      old_value:
-        params.oldValue === undefined ? null : JSON.stringify(params.oldValue),
-      new_value:
-        params.newValue === undefined ? null : JSON.stringify(params.newValue),
+      old_value: params.oldValue === undefined ? null : JSON.stringify(params.oldValue),
+      new_value: params.newValue === undefined ? null : JSON.stringify(params.newValue),
       request_id: params.requestId,
       created_at: params.nowIso ?? new Date().toISOString(),
     };

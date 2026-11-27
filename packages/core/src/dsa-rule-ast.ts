@@ -99,6 +99,10 @@ export function evaluateRiskRuleAst(
     return !evaluateRiskRuleAst(node.child, features);
   }
 
+  if (node.type !== "CMP") {
+    return false;
+  }
+
   const actual = features[node.field];
   if (actual === undefined) {
     return false;

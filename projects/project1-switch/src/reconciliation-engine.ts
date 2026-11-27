@@ -34,10 +34,7 @@ export type ReconciliationClass =
   | "STATUS_MISMATCH";
 
 export type ExceptionResolutionAction =
-  | "TRIGGER_CREDIT"
-  | "TRIGGER_REVERSAL"
-  | "MARK_INVESTIGATED"
-  | "ATTACH_NOTE";
+  "TRIGGER_CREDIT" | "TRIGGER_REVERSAL" | "MARK_INVESTIGATED" | "ATTACH_NOTE";
 
 export interface ReconciliationRecord {
   id: string;
@@ -189,9 +186,7 @@ export class ReconciliationEngine {
     ]);
 
     // Clear previous unsettled reconciliation run for this cycle if re-running
-    this.db
-      .prepare(`DELETE FROM reconciliation_records WHERE cycle_id = ?`)
-      .run(params.cycleId);
+    this.db.prepare(`DELETE FROM reconciliation_records WHERE cycle_id = ?`).run(params.cycleId);
 
     const records: ReconciliationRecord[] = [];
 
@@ -218,10 +213,7 @@ export class ReconciliationEngine {
         cycle_id: params.cycleId,
         rrn,
         transaction_id:
-          swTx?.transaction_id ??
-          remRow?.transaction_id ??
-          benRow?.transaction_id ??
-          null,
+          swTx?.transaction_id ?? remRow?.transaction_id ?? benRow?.transaction_id ?? null,
         classification: classified.classification,
         switch_state: swTx?.state ?? null,
         switch_amount_paise: swTx?.amount_paise ?? null,
@@ -232,8 +224,7 @@ export class ReconciliationEngine {
         beneficiary_state: benRow?.status ?? null,
         beneficiary_amount_paise: benRow?.amount_paise ?? null,
         discrepancy_amount_paise: classified.discrepancyPaise,
-        status:
-          classified.classification === "MATCHED" ? "MATCHED" : "OPEN_EXCEPTION",
+        status: classified.classification === "MATCHED" ? "MATCHED" : "OPEN_EXCEPTION",
         resolution_action: null,
         resolution_note: null,
         resolution_posting_journal_id: null,
@@ -328,10 +319,7 @@ export class ReconciliationEngine {
           discrepancyPaise: swTx.amount_paise,
         };
       }
-      if (
-        remRow.amount_paise !== swTx.amount_paise ||
-        benRow.amount_paise !== swTx.amount_paise
-      ) {
+      if (remRow.amount_paise !== swTx.amount_paise || benRow.amount_paise !== swTx.amount_paise) {
         const diff =
           Math.abs(swTx.amount_paise - remRow.amount_paise) +
           Math.abs(swTx.amount_paise - benRow.amount_paise);
@@ -402,15 +390,11 @@ export class ReconciliationEngine {
 
     let journalId: string | null = null;
     const amountToMove =
-      exc.switch_amount_paise ??
-      exc.remitter_amount_paise ??
-      exc.discrepancy_amount_paise;
+      exc.switch_amount_paise ?? exc.remitter_amount_paise ?? exc.discrepancy_amount_paise;
 
     if (params.action === "TRIGGER_CREDIT") {
       if (!params.beneficiaryBank || !params.beneficiaryAccountNumber) {
-        throw new Error(
-          "TRIGGER_CREDIT requires beneficiaryBank and beneficiaryAccountNumber"
-        );
+        throw new Error("TRIGGER_CREDIT requires beneficiaryBank and beneficiaryAccountNumber");
       }
       // Post credit at the beneficiary bank with `exceptionId` reference (Requirement 23 & Acceptance Test 9)
       const posted = params.beneficiaryBank.ledger.postJournalEntry({
@@ -434,9 +418,7 @@ export class ReconciliationEngine {
       journalId = posted.journalId;
     } else if (params.action === "TRIGGER_REVERSAL") {
       if (!params.remitterBank || !params.remitterAccountNumber) {
-        throw new Error(
-          "TRIGGER_REVERSAL requires remitterBank and remitterAccountNumber"
-        );
+        throw new Error("TRIGGER_REVERSAL requires remitterBank and remitterAccountNumber");
       }
       // Post compensating reversal credit to the remitter customer with `exceptionId` reference
       const posted = params.remitterBank.ledger.postJournalEntry({
@@ -471,14 +453,7 @@ export class ReconciliationEngine {
              resolved_at = ?
          WHERE id = ?`
       )
-      .run(
-        params.action,
-        params.note ?? null,
-        journalId,
-        actorId,
-        nowIso,
-        exc.id
-      );
+      .run(params.action, params.note ?? null, journalId, actorId, nowIso, exc.id);
 
     this.recomputeSummary(exc.cycle_id, nowIso);
 
@@ -570,19 +545,7 @@ export class ReconciliationEngine {
       .prepare(`SELECT * FROM reconciliation_records WHERE cycle_id = ?`)
       .all(cycleId) as unknown as ReconciliationRecord[];
 
-    const classes: ReconciliationClass[] = [
-      "MATCHED",
-      "MISSING_AT_REMITTER",
-      "MISSING_AT_BENEFICIARY",
-      "MISSING_AT_SWITCH",
-      "AMOUNT_MISMATCH",
-      "STATUS_MISMATCH",
-    ];
-
-    const byClass: Record<
-      ReconciliationClass,
-      { count: number; amount_paise: number }
-    > = {
+    const byClass: Record<ReconciliationClass, { count: number; amount_paise: number }> = {
       MATCHED: { count: 0, amount_paise: 0 },
       MISSING_AT_REMITTER: { count: 0, amount_paise: 0 },
       MISSING_AT_BENEFICIARY: { count: 0, amount_paise: 0 },
@@ -598,10 +561,7 @@ export class ReconciliationEngine {
 
     for (const r of allRecords) {
       const amt =
-        r.switch_amount_paise ??
-        r.remitter_amount_paise ??
-        r.beneficiary_amount_paise ??
-        0;
+        r.switch_amount_paise ?? r.remitter_amount_paise ?? r.beneficiary_amount_paise ?? 0;
       byClass[r.classification].count += 1;
       byClass[r.classification].amount_paise += amt;
 
@@ -619,8 +579,7 @@ export class ReconciliationEngine {
     }
 
     const total = allRecords.length;
-    const matchRatePercent =
-      total === 0 ? 100 : Math.round((matchedCount / total) * 10000) / 100;
+    const matchRatePercent = total === 0 ? 100 : Math.round((matchedCount / total) * 10000) / 100;
 
     this.db
       .prepare(
