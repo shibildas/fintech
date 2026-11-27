@@ -29,7 +29,9 @@ export function getAllowedCorsOrigin(requestOrigin?: string): string {
   ]);
   if (
     requestOrigin &&
-    (allowed.has(requestOrigin) || /^https:\/\/[a-z0-9-]+\.hf\.space$/i.test(requestOrigin))
+    (allowed.has(requestOrigin) ||
+      /^https:\/\/[a-z0-9-]+\.(hf\.space|onrender\.com)$/i.test(requestOrigin) ||
+      (process.env.PUBLIC_ORIGIN && requestOrigin === process.env.PUBLIC_ORIGIN))
   ) {
     return requestOrigin;
   }
