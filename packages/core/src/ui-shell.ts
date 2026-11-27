@@ -29,17 +29,34 @@ export function renderFintechShellHtml(params: {
   scriptJs: string;
 }): string {
   const { p1, p2, p3, p4 } = getConfiguredPorts();
-  const navItems: Array<{ slot: 3001 | 3002 | 3003 | 3004; port: number; label: string }> = [
-    { slot: 3001, port: p1, label: `Switch :${p1}` },
-    { slot: 3002, port: p2, label: `Gateway :${p2}` },
-    { slot: 3003, port: p3, label: `Consumer :${p3}` },
-    { slot: 3004, port: p4, label: `Mandates :${p4}` },
+  const isCloudSinglePort = process.env.CLOUD_SINGLE_PORT === "true";
+  const navItems: Array<{ slot: 3001 | 3002 | 3003 | 3004; href: string; label: string }> = [
+    {
+      slot: 3001,
+      href: isCloudSinglePort ? "/p1/" : `http://127.0.0.1:${p1}/`,
+      label: isCloudSinglePort ? "P1 Switch" : `Switch :${p1}`,
+    },
+    {
+      slot: 3002,
+      href: isCloudSinglePort ? "/p2/" : `http://127.0.0.1:${p2}/`,
+      label: isCloudSinglePort ? "P2 Gateway" : `Gateway :${p2}`,
+    },
+    {
+      slot: 3003,
+      href: isCloudSinglePort ? "/p3/" : `http://127.0.0.1:${p3}/`,
+      label: isCloudSinglePort ? "P3 Consumer" : `Consumer :${p3}`,
+    },
+    {
+      slot: 3004,
+      href: isCloudSinglePort ? "/p4/" : `http://127.0.0.1:${p4}/`,
+      label: isCloudSinglePort ? "P4 Mandates" : `Mandates :${p4}`,
+    },
   ];
 
   const navHtml = navItems
     .map((item) => {
       const cls = item.slot === params.activePort ? "nav-link active" : "nav-link";
-      return `<a class="${cls}" href="http://127.0.0.1:${item.port}/">${escapeHtml(item.label)}</a>`;
+      return `<a class="${cls}" href="${item.href}">${escapeHtml(item.label)}</a>`;
     })
     .join("");
 
@@ -305,6 +322,18 @@ export function renderFintechShellHtml(params: {
     ${params.bodyHtml}
   </main>
   <script>
+    (function () {
+      const m = location.pathname.match(/^\\/(p[1-4])(\\/|$)/);
+      if (!m) return;
+      const prefix = "/" + m[1];
+      const origFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        if (typeof input === "string" && input.startsWith("/") && !input.startsWith(prefix + "/")) {
+          return origFetch(prefix + input, init);
+        }
+        return origFetch(input, init);
+      };
+    })();
     const MIN_UX_DELAY_MS = 320;
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     function toast(message, kind = "info") {

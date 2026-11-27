@@ -27,7 +27,10 @@ export function getAllowedCorsOrigin(requestOrigin?: string): string {
     `http://localhost:${p3}`,
     `http://localhost:${p4}`,
   ]);
-  if (requestOrigin && allowed.has(requestOrigin)) {
+  if (
+    requestOrigin &&
+    (allowed.has(requestOrigin) || /^https:\/\/[a-z0-9-]+\.hf\.space$/i.test(requestOrigin))
+  ) {
     return requestOrigin;
   }
   return `http://127.0.0.1:${p1}`;
