@@ -5,6 +5,10 @@ import {
   readRawAndJsonBody,
   writeJsonResponse,
   writeHtmlResponse,
+  validateCardPanLuhn,
+  validatePositivePaise,
+  validateVpa,
+  validatePinOrOtp,
 } from "@fintech/core";
 import type { AcquirerSimulator } from "./acquirer-simulator.ts";
 import { runPciGrepTest } from "./token-vault.ts";
@@ -27,21 +31,32 @@ export class GatewayHttpServer {
   }
 
   private authenticate(req: http.IncomingMessage, rawBody: string) {
+    const session = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+    if (session) {
+      return {
+        merchant: { id: this.ctx.seededMerchantId },
+        mode: "LIVE" as const,
+        uiRole: session.role,
+      };
+    }
     const keyId = String(req.headers["x-key-id"] ?? "").trim();
     const timestampIso = String(req.headers["x-timestamp"] ?? "").trim();
     const signature = String(req.headers["x-signature"] ?? "").trim();
     if (!keyId || !timestampIso || !signature) {
       throw Object.assign(
-        new Error("Unauthorized (HTTP 401): Missing X-Key-Id, X-Timestamp, or X-Signature"),
+        new Error(
+          "Unauthorized (HTTP 401): Missing session cookie or HMAC X-Key-Id/X-Timestamp/X-Signature"
+        ),
         { statusCode: 401 }
       );
     }
-    return this.ctx.gateway.authenticateMerchantRequest({
+    const res = this.ctx.gateway.authenticateMerchantRequest({
       keyId,
       rawBody,
       timestampIso,
       signature,
     });
+    return { ...res, uiRole: "admin" as const };
   }
 
   private assertOwnership(table: "orders" | "payments", id: string, merchantId: string): void {
@@ -114,9 +129,36 @@ export class GatewayHttpServer {
 
         const { rawBody, json } = await readRawAndJsonBody(req);
 
+        // UI Session Auth (scrypt hashed passwords in SQLite + HttpOnly cookie)
+        if (method === "GET" && pathname === "/api/auth/me") {
+          const user = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { authenticated: Boolean(user), user }, origin);
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/login") {
+          const out = this.ctx.uiAuth.login(
+            String(json.username ?? ""),
+            String(json.password ?? "")
+          );
+          if (!out) {
+            writeJsonResponse(res, 401, { error: "Invalid username or password" }, origin);
+            return;
+          }
+          writeJsonResponse(res, 200, { user: out.user }, origin, {
+            "set-cookie": out.setCookieHeader,
+          });
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/logout") {
+          const clearCookie = this.ctx.uiAuth.logoutFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { loggedOut: true }, origin, { "set-cookie": clearCookie });
+          return;
+        }
+
         if (method === "POST" && pathname === "/api/vault/tokenize") {
+          const cardNumber = validateCardPanLuhn(json.cardNumber, "cardNumber");
           const meta = this.ctx.gateway.vault.tokenize({
-            cardNumber: String(json.cardNumber ?? ""),
+            cardNumber,
             expiry: String(json.expiry ?? "12/29"),
             merchantId: String(json.merchantId ?? this.ctx.seededMerchantId),
             customerReference: json.customerReference ? String(json.customerReference) : null,
@@ -128,11 +170,12 @@ export class GatewayHttpServer {
         const auth = this.authenticate(req, rawBody);
 
         if (method === "POST" && pathname === "/api/orders") {
+          const amountPaise = validatePositivePaise(json.amountPaise ?? 100_000, "amountPaise");
           const result = await this.ctx.gateway.createOrder({
             merchantId: auth.merchant.id,
             mode: auth.mode,
             idempotencyKey: String(json.idempotencyKey ?? `ord_${Date.now()}`),
-            amountPaise: Number(json.amountPaise ?? 100_000),
+            amountPaise,
             merchantOrderId: String(json.merchantOrderId ?? `rcpt_${Date.now()}`),
             customerReference: json.customerReference ? String(json.customerReference) : undefined,
           });
@@ -143,9 +186,16 @@ export class GatewayHttpServer {
         if (method === "POST" && pathname === "/api/payments") {
           const orderId = String(json.orderId ?? "");
           this.assertOwnership("orders", orderId, auth.merchant.id);
+          const payMethod = (json.method as "CARD" | "UPI" | "NETBANKING" | "WALLET") ?? "CARD";
+          if (payMethod === "UPI") {
+            validateVpa(json.upiPayerVpa, "upiPayerVpa");
+            validatePinOrOtp(json.upiRawPin, "upiRawPin");
+          } else if (payMethod === "CARD" && json.cardOtp !== undefined) {
+            validatePinOrOtp(json.cardOtp, "cardOtp");
+          }
           const resPay = await this.ctx.gateway.payOrder({
             orderId,
-            method: (json.method as "CARD" | "UPI" | "NETBANKING" | "WALLET") ?? "CARD",
+            method: payMethod,
             tokenId: json.tokenId ? String(json.tokenId) : undefined,
             cardOtp: json.cardOtp !== undefined ? String(json.cardOtp) : undefined,
             upiPayerVpa: json.upiPayerVpa ? String(json.upiPayerVpa) : undefined,
@@ -167,10 +217,13 @@ export class GatewayHttpServer {
 
         const acqMatch = pathname.match(/^\/api\/acquirers\/([^/]+)\/chaos$/);
         if (method === "PUT" && acqMatch) {
-          if (auth.mode !== "LIVE") {
-            throw Object.assign(new Error("Forbidden (HTTP 403): LIVE key required"), {
-              statusCode: 403,
-            });
+          if (auth.mode !== "LIVE" || auth.uiRole !== "admin") {
+            throw Object.assign(
+              new Error("Forbidden (HTTP 403): Admin role required for acquirer chaos"),
+              {
+                statusCode: 403,
+              }
+            );
           }
           const id = decodeURIComponent(acqMatch[1]).toUpperCase();
           const map: Record<string, AcquirerSimulator> = {
@@ -216,7 +269,7 @@ export class GatewayHttpServer {
             .map((s) => s.replace(/[\s-]/g, ""))
             .filter((s) => s.length >= 13);
           const rawPansUsed =
-            customPans.length > 0 ? customPans : ["4111111111114242", "5555555555554444"];
+            customPans.length > 0 ? customPans : ["4242424242424242", "5555555555554444"];
           const audit = runPciGrepTest({
             gatewayDb: this.ctx.gateway.gatewayDb,
             vaultDb: this.ctx.gateway.vault.vaultDb,
@@ -285,8 +338,8 @@ export class GatewayHttpServer {
         }
 
         if (method === "PUT" && pathname === "/api/webhooks/demo-receiver") {
-          if (auth.mode !== "LIVE") {
-            throw Object.assign(new Error("Forbidden (HTTP 403): LIVE key required"), {
+          if (auth.mode !== "LIVE" || auth.uiRole !== "admin") {
+            throw Object.assign(new Error("Forbidden (HTTP 403): Admin role required"), {
               statusCode: 403,
             });
           }
@@ -314,6 +367,14 @@ export class GatewayHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/keys/rotate") {
+          if (auth.uiRole !== "admin") {
+            throw Object.assign(
+              new Error("Forbidden (HTTP 403): Admin role required to rotate API keys"),
+              {
+                statusCode: 403,
+              }
+            );
+          }
           const rotated = this.ctx.gateway.rotateApiKey({
             merchantId: auth.merchant.id,
             mode: auth.mode,

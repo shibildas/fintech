@@ -1,5 +1,5 @@
 import path from "node:path";
-import { ensureDataDir } from "@fintech/core";
+import { ensureDataDir, UiAuthStore } from "@fintech/core";
 import { CentralSwitch, createSeededTopology } from "@fintech/project1-switch";
 import { ConsumerPspBackend } from "./psp-backend.ts";
 import { ConsumerPayEngine } from "./pay-flows.ts";
@@ -13,6 +13,7 @@ import { ConsumerDisputeDesk } from "./dispute-desk.ts";
  */
 export interface ConsumerHttpServerContext {
   psp: ConsumerPspBackend;
+  uiAuth: UiAuthStore;
   payEngine: ConsumerPayEngine;
   collects: CollectRequestEngine;
   risk: RealTimeRiskEngine;
@@ -114,8 +115,28 @@ export function createPersistentConsumerContext(options?: {
     }
   }
 
+  const uiAuth = new UiAuthStore({
+    db: psp.db,
+    cookieName: "fintech_sess_p3",
+    seedUsers: [
+      {
+        username: "anita.user",
+        password: process.env.P3_USER_PASSWORD ?? "ConsUser#2026",
+        role: "user",
+        displayName: "Anita Sharma (Consumer)",
+      },
+      {
+        username: "risk.admin",
+        password: process.env.P3_ADMIN_PASSWORD ?? "RiskAdmin#2026",
+        role: "admin",
+        displayName: "Risk & Ops Admin",
+      },
+    ],
+  });
+
   return {
     psp,
+    uiAuth,
     payEngine,
     collects,
     risk,

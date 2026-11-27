@@ -7,6 +7,10 @@ import {
   timingSafeTokenEqual,
   writeJsonResponse,
   writeHtmlResponse,
+  validateIndianMobile,
+  validateNonEmptyString,
+  validatePinOrOtp,
+  validatePositivePaise,
 } from "@fintech/core";
 import type { PayPathType } from "./pay-flows.ts";
 import { renderConsumerUiHtml } from "./consumer-ui.ts";
@@ -33,6 +37,16 @@ export class ConsumerHttpServer {
   }
 
   private requireOpsToken(req: http.IncomingMessage): void {
+    const session = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+    if (session) {
+      if (session.role !== "admin") {
+        throw Object.assign(
+          new Error("Forbidden (HTTP 403): Admin role required for Risk, Disputes & Chaos"),
+          { statusCode: 403 }
+        );
+      }
+      return;
+    }
     const token = String(req.headers["x-ops-token"] ?? "").trim();
     if (!timingSafeTokenEqual(token, this.ctx.opsToken)) {
       throw Object.assign(new Error("Unauthorized (HTTP 401): Missing or invalid X-Ops-Token"), {
@@ -129,11 +143,41 @@ export class ConsumerHttpServer {
 
         const { rawBody, json } = await readRawAndJsonBody(req);
 
-        if (method === "POST" && pathname === "/api/signup") {
-          const out = this.ctx.psp.signup({
-            mobileNumber: String(json.mobileNumber ?? ""),
-            fullName: String(json.fullName ?? "Anita Sharma"),
+        // UI Session Auth (scrypt hashed passwords in SQLite + HttpOnly cookie)
+        if (method === "GET" && pathname === "/api/auth/me") {
+          const user = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { authenticated: Boolean(user), user }, origin);
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/login") {
+          const out = this.ctx.uiAuth.login(
+            String(json.username ?? ""),
+            String(json.password ?? "")
+          );
+          if (!out) {
+            writeJsonResponse(res, 401, { error: "Invalid username or password" }, origin);
+            return;
+          }
+          writeJsonResponse(res, 200, { user: out.user }, origin, {
+            "set-cookie": out.setCookieHeader,
           });
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/logout") {
+          const clearCookie = this.ctx.uiAuth.logoutFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { loggedOut: true }, origin, { "set-cookie": clearCookie });
+          return;
+        }
+
+        if (method === "POST" && pathname === "/api/signup") {
+          const mobileNumber = validateIndianMobile(json.mobileNumber, "mobileNumber");
+          const fullName = validateNonEmptyString(
+            json.fullName ?? "Anita Sharma",
+            "fullName",
+            2,
+            80
+          );
+          const out = this.ctx.psp.signup({ mobileNumber, fullName });
           console.log(
             `[p3:consumer] Mock SMS OTP for ${out.customer.mobile_number}: ${out.mockSmsOtp}`
           );
@@ -142,10 +186,9 @@ export class ConsumerHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/otp/verify") {
-          const c = this.ctx.psp.verifySmsOtp(
-            String(json.mobileNumber ?? ""),
-            String(json.otp ?? "")
-          );
+          const mobileNumber = validateIndianMobile(json.mobileNumber, "mobileNumber");
+          const otp = validatePinOrOtp(json.otp, "otp");
+          const c = this.ctx.psp.verifySmsOtp(mobileNumber, otp);
           const onboardingToken = `ob_${crypto.randomBytes(24).toString("hex")}`;
           this.onboardingTokens.set(onboardingToken, {
             customerId: c.id,
@@ -286,7 +329,10 @@ export class ConsumerHttpServer {
               ? String(json.payeeAccountNumber)
               : undefined,
             payeeIfsc: json.payeeIfsc ? String(json.payeeIfsc) : undefined,
-            amountPaise: json.amountPaise !== undefined ? Number(json.amountPaise) : undefined,
+            amountPaise:
+              json.amountPaise !== undefined
+                ? validatePositivePaise(json.amountPaise, "amountPaise")
+                : undefined,
             rawPin: String(json.rawPin ?? ""),
             txnNonce,
             clientPinProofHex,

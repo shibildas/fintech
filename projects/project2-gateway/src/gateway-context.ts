@@ -1,5 +1,5 @@
 import path from "node:path";
-import { ensureDataDir } from "@fintech/core";
+import { ensureDataDir, UiAuthStore } from "@fintech/core";
 import { CentralSwitch, createSeededTopology } from "@fintech/project1-switch";
 import { AcquirerSimulator } from "./acquirer-simulator.ts";
 import { PaymentGatewayEngine } from "./gateway-engine.ts";
@@ -11,6 +11,7 @@ import { DemoStoreWebhookReceiver } from "./webhook-worker.ts";
  */
 export interface GatewayHttpServerContext {
   gateway: PaymentGatewayEngine;
+  uiAuth: UiAuthStore;
   acqAlpha: AcquirerSimulator;
   acqBeta: AcquirerSimulator;
   acqGamma: AcquirerSimulator;
@@ -158,8 +159,28 @@ export function createPersistentGatewayContext(options?: {
   const demoStore = new DemoStoreWebhookReceiver(webhookSecret);
   gateway.webhooks.registerMockHttpTarget(webhookUrl, demoStore.createHandler());
 
+  const uiAuth = new UiAuthStore({
+    db: gateway.gatewayDb,
+    cookieName: "fintech_sess_p2",
+    seedUsers: [
+      {
+        username: "acme.user",
+        password: process.env.P2_USER_PASSWORD ?? "GateUser#2026",
+        role: "user",
+        displayName: "Acme Ops User",
+      },
+      {
+        username: "acme.admin",
+        password: process.env.P2_ADMIN_PASSWORD ?? "GateAdmin#2026",
+        role: "admin",
+        displayName: "Acme Finance Admin",
+      },
+    ],
+  });
+
   return {
     gateway,
+    uiAuth,
     acqAlpha,
     acqBeta,
     acqGamma,

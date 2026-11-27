@@ -109,7 +109,7 @@ describe("Slices 02 & 03 — Project 2 Gateway Live HTTP Server, HMAC Auth, Isol
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          cardNumber: "4111111111114242",
+          cardNumber: "4242424242424242",
           expiry: "12/29",
           merchantId: ctx.seededMerchantId,
         }),

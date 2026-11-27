@@ -1,118 +1,146 @@
 import { renderFintechShellHtml } from "../../../packages/core/src/index.ts";
 
 /**
- * Project 1 — UPI Central Switch Interactive Admin Console HTML/JS UI.
+ * Project 1 — UPI Central Switch Product Dashboard UI (Login Gate, Sidebar, KPIs, Tables).
  */
 export function renderSwitchAdminHtml(activeCycleId: string): string {
   const safeCycleJson = JSON.stringify(activeCycleId);
   return renderFintechShellHtml({
-    title: "Project 1 — UPI Central Switch",
-    subtitle: "ISO 8583 6-Hop Pay • Chaos Injection • T+1 Settlement & 3-Way Recon",
+    title: "UPI Central Switch",
+    subtitle: "ISO 8583 6-Hop Pay • Chaos • Settlement & Recon",
     activePort: 3001,
+    tabs: [
+      { id: "overview", label: "Overview & Balances" },
+      { id: "pay", label: "Send 6-Hop Pay" },
+      { id: "txns", label: "Transactions" },
+      { id: "chaos", label: "Chaos & Faults", adminOnly: true },
+      { id: "recon", label: "Settlement & Recon" },
+    ],
+    loginAccounts: [
+      { username: "switch.ops", role: "user", label: "Operator (Pay, Recon)" },
+      { username: "switch.admin", role: "admin", label: "Admin (Full + Chaos)" },
+    ],
     bodyHtml: `
-      <div class="auth-bar">
-        <label>Admin Token (see server stdout)<input id="p1Token" type="password" placeholder="Paste X-Admin-Token" /></label>
-        <label>RBAC Role<select id="p1Role"><option value="operator">operator</option><option value="admin">admin</option></select></label>
-        <button onclick="loadBalances(this)">Refresh Balances</button>
-        <button class="secondary" onclick="loadTxns(this)">Recent Transactions</button>
-      </div>
-      <div class="grid">
+      <section id="view-overview" class="view-pane">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-label">Active Settlement Cycle</div><div class="kpi-value mono" id="kpiCycle">${activeCycleId}</div><div class="kpi-sub">T+1 Multilateral Netting</div></div>
+          <div class="kpi-card"><div class="kpi-label">Total Bank Liquidity</div><div class="kpi-value" id="kpiLiquidity">—</div><div class="kpi-sub">Across BANKA, BANKB, BANKC</div></div>
+          <div class="kpi-card"><div class="kpi-label">Seeded Accounts</div><div class="kpi-value" id="kpiAcctCount">4</div><div class="kpi-sub">Persistent SQLite Ledgers</div></div>
+        </div>
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">1</span> Live Bank Core Balances</h2>
-            <p class="hint">Persistent SQLite balances across BANKA, BANKB, and BANKC.</p>
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div><h3>Live Bank Core Balances</h3><p class="hint" style="margin:0;">Double-entry ledger &amp; available balances persisted in SQLite.</p></div>
+            <button onclick="loadBalances(this)">Refresh Balances</button>
           </div>
-          <div class="out-wrap">
-            <div id="balOutMeta" class="out-meta"></div>
-            <pre id="balOut" class="out">Enter X-Admin-Token above and click Refresh Balances.</pre>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bank</th><th>VPA Handle</th><th>Masked Account</th><th>Ledger Balance</th><th>Available Balance</th></tr></thead>
+              <tbody id="balTableBody"><tr><td colspan="5" style="color:var(--muted);">Loading balances...</td></tr></tbody>
+            </table>
           </div>
         </div>
+      </section>
 
+      <section id="view-pay" class="view-pane hidden">
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">2</span> Execute 6-Hop UPI Pay</h2>
-            <p class="hint">Sends an ISO 8583 MTI 0200 payment through PSP → Switch → Remitter &amp; Beneficiary banks.</p>
-          </div>
+          <h3>Execute 6-Hop UPI Pay</h3>
+          <p class="hint">Routes an ISO 8583 MTI 0200 payment through PSP → Switch → Remitter &amp; Beneficiary banks.</p>
           <div class="row">
             <label>Payer VPA<input id="payerVpa" value="anita@psp1" /></label>
             <label>Payee VPA<input id="payeeVpa" value="shop@psp2" /></label>
           </div>
           <div class="row">
             <label>Amount (paise)<input id="amountPaise" type="number" value="50000" /></label>
-            <label>UPI PIN<input id="rawPin" type="password" placeholder="Enter UPI PIN" /></label>
+            <label>UPI PIN<input id="rawPin" type="password" placeholder="Enter customer UPI PIN" /></label>
             <button onclick="sendPay(this)">Send 0200 PAY</button>
           </div>
-          <div class="out-wrap">
-            <div id="payOutMeta" class="out-meta"></div>
-            <pre id="payOut" class="out">6-hop ISO 8583 trace will appear here.</pre>
+          <div id="hopSummary" style="margin-top:12px;"></div>
+        </div>
+      </section>
+
+      <section id="view-txns" class="view-pane hidden">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div><h3>Recent Switch Transactions</h3><p class="hint" style="margin:0;">Latest ISO 8583 transactions processed by the Central Switch.</p></div>
+            <button class="secondary" onclick="loadTxns(this)">Refresh Transactions</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>RRN</th><th>Payer → Payee</th><th>Amount</th><th>Response</th><th>State</th></tr></thead>
+              <tbody id="txnTableBody"><tr><td colspan="5" style="color:var(--muted);">Click Refresh Transactions to load history.</td></tr></tbody>
+            </table>
           </div>
         </div>
+      </section>
 
+      <section id="view-chaos" class="view-pane hidden">
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">3</span> Bank Chaos Control (Admin RBAC)</h2>
-            <p class="hint">Test operator (403) vs admin (200) permissions and timeout/reversal recovery.</p>
-          </div>
+          <h3>Bank Chaos Control <span class="badge warn">Admin RBAC</span></h3>
+          <p class="hint">Sign in as <code>switch.ops</code> to test HTTP 403 RBAC rejection, or <code>switch.admin</code> to apply live chaos.</p>
           <div class="row">
-            <label>Bank<select id="chaosBank"><option>BANKA</option><option>BANKB</option><option>BANKC</option></select></label>
-            <label>Chaos Mode<select id="chaosMode"><option value="normal">Healthy</option><option value="hang">debitThenHang (CHK)</option><option value="down">forceDown (0420)</option></select></label>
+            <label>Target Bank<select id="chaosBank"><option>BANKA</option><option>BANKB</option><option>BANKC</option></select></label>
+            <label>Chaos Mode<select id="chaosMode"><option value="normal">Healthy (Normal)</option><option value="hang">debitThenHang (CHK Recovery)</option><option value="down">forceDown (0420 Reversal)</option></select></label>
             <label>Latency (ms)<input id="chaosLatency" type="number" value="0" min="0" /></label>
-          </div>
-          <div class="row">
             <button class="danger" onclick="applyChaos(this)">Apply Chaos Policy</button>
           </div>
-          <div class="out-wrap">
-            <div id="chaosOutMeta" class="out-meta"></div>
-            <pre id="chaosOut" class="out">Switch role to admin to update bank chaos settings.</pre>
-          </div>
         </div>
+      </section>
 
+      <section id="view-recon" class="view-pane hidden">
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">4</span> T+1 Settlement &amp; 3-Way Recon</h2>
-            <p class="hint">Runs zero-sum multilateral netting and 6-class three-way reconciliation.</p>
-          </div>
+          <h3>T+1 Settlement &amp; 3-Way Reconciliation</h3>
+          <p class="hint">Runs zero-sum multilateral netting across BANKA/B/C and classifies 3-way reconciliation exceptions.</p>
           <div class="row">
             <button onclick="runSettlement(this)">Run Settlement Cycle</button>
-            <button class="secondary" onclick="runRecon(this)">Run 3-Way Recon</button>
+            <button class="secondary" onclick="runRecon(this)">Run 3-Way Reconciliation</button>
           </div>
-          <div class="out-wrap">
-            <div id="reconOutMeta" class="out-meta"></div>
-            <pre id="reconOut" class="out">Settlement net positions and reconciliation summary.</pre>
-          </div>
+          <div id="reconCards" class="kpi-grid" style="margin-top:14px;"></div>
         </div>
-      </div>`,
+      </section>`,
     scriptJs: `
       const ACTIVE_CYCLE_ID = ${safeCycleJson};
-      function p1Headers() {
-        return {
-          "content-type": "application/json",
-          "x-admin-token": document.getElementById("p1Token").value.trim(),
-          "x-role": document.getElementById("p1Role").value
-        };
-      }
+      window.onAppAuthenticated = () => { loadBalances(null); loadTxns(null); };
       async function loadBalances(btn) {
-        return runAction(btn, "balOut", "Loading balances", async () => {
-          const r = await fetch("/api/balances", { headers: p1Headers() });
+        const res = await runAction(btn, null, "Loading balances", async () => {
+          const r = await fetch("/api/balances");
           return { status: r.status, body: await r.json(), toastLabel: "Balances" };
         });
+        if (res && res.status === 200 && res.body?.accounts) {
+          const accts = res.body.accounts;
+          const total = accts.reduce((s, a) => s + Number(a.ledger_balance_paise || 0), 0);
+          document.getElementById("kpiLiquidity").textContent = formatInr(total);
+          document.getElementById("kpiAcctCount").textContent = String(accts.length);
+          document.getElementById("balTableBody").innerHTML = accts.map(a =>
+            '<tr><td><span class="badge neutral">' + esc(a.bank) + '</span></td><td class="mono">' + esc(a.vpa) + '</td><td class="mono">' + esc(a.account_masked) + '</td><td><strong>' + formatInr(a.ledger_balance_paise) + '</strong></td><td>' + formatInr(a.available_balance_paise) + '</td></tr>'
+          ).join("");
+        }
       }
       async function loadTxns(btn) {
-        return runAction(btn, "balOut", "Fetching transactions", async () => {
-          const r = await fetch("/transactions", { headers: p1Headers() });
+        const res = await runAction(btn, null, "Loading transactions", async () => {
+          const r = await fetch("/transactions");
           return { status: r.status, body: await r.json(), toastLabel: "Transactions" };
         });
+        if (res && res.status === 200) {
+          const rows = res.body?.transactions || [];
+          document.getElementById("txnTableBody").innerHTML = rows.length
+            ? rows.slice(0, 20).map(t => {
+                const cls = t.state === "SUCCESS" ? "ok" : t.state === "REVERSED" ? "warn" : "err";
+                return '<tr><td class="mono">' + esc(t.rrn) + '</td><td class="mono">' + esc(t.payer_vpa) + ' → ' + esc(t.payee_vpa) + '</td><td><strong>' + formatInr(t.amount_paise) + '</strong></td><td class="mono">' + esc(t.response_code || "-") + '</td><td><span class="badge ' + cls + '">' + esc(t.state) + '</span></td></tr>';
+              }).join("")
+            : '<tr><td colspan="5" style="color:var(--muted);">No transactions yet. Execute a 6-Hop Pay first.</td></tr>';
+        }
       }
       async function sendPay(btn) {
+        if (!validateFields([
+          { id: "payerVpa", check: V.vpa },
+          { id: "payeeVpa", check: V.vpa },
+          { id: "amountPaise", check: V.posInt },
+          { id: "rawPin", check: V.pin }
+        ])) return;
         const rawPin = document.getElementById("rawPin").value.trim();
-        if (!rawPin) {
-          toast("Please enter UPI PIN (see server stdout)", "err");
-          return show("payOut", { error: "Please enter UPI PIN (see server stdout)" }, { status: 400 });
-        }
-        const res = await runAction(btn, "payOut", "Executing 6-hop pay", async () => {
+        const res = await runAction(btn, null, "Executing 6-hop pay", async () => {
           const r = await fetch("/api/pay-demo", {
-            method: "POST",
-            headers: p1Headers(),
+            method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({
               payerVpa: document.getElementById("payerVpa").value,
               payeeVpa: document.getElementById("payeeVpa").value,
@@ -120,35 +148,48 @@ export function renderSwitchAdminHtml(activeCycleId: string): string {
               rawPin
             })
           });
-          return { status: r.status, body: await r.json(), toastLabel: "UPI 0200 Pay" };
+          return { status: r.status, body: await r.json(), toastLabel: "6-Hop UPI Pay" };
         });
-        if (res && res.status === 200) loadBalances(null);
+        if (res && res.status === 200 && res.body?.transaction) {
+          const tx = res.body.transaction;
+          const hops = res.body.hops || [];
+          document.getElementById("hopSummary").innerHTML =
+            '<div class="kpi-grid"><div class="kpi-card"><div class="kpi-label">Status</div><div class="kpi-value"><span class="badge ' + (tx.state === "SUCCESS" ? "ok" : "err") + '">' + esc(tx.state) + ' (' + esc(tx.response_code) + ')</span></div></div><div class="kpi-card"><div class="kpi-label">RRN</div><div class="kpi-value mono" style="font-size:15px;">' + esc(tx.rrn) + '</div></div><div class="kpi-card"><div class="kpi-label">ISO 8583 Hops</div><div class="kpi-value">' + hops.length + ' hops</div></div></div>';
+          loadBalances(null);
+          loadTxns(null);
+        }
       }
       async function applyChaos(btn) {
-        return runAction(btn, "chaosOut", "Applying chaos", async () => {
+        return runAction(btn, null, "Applying chaos", async () => {
           const bank = encodeURIComponent(document.getElementById("chaosBank").value);
           const mode = document.getElementById("chaosMode").value;
           const latencyMs = Number(document.getElementById("chaosLatency").value) || 0;
           const payload = mode === "hang" ? { debitThenHang: true, forceDown: false, latencyMs }
                         : mode === "down" ? { debitThenHang: false, forceDown: true, latencyMs }
                         : { debitThenHang: false, forceDown: false, latencyMs };
-          const r = await fetch("/participants/" + bank + "/chaos", {
-            method: "PUT", headers: p1Headers(), body: JSON.stringify(payload)
-          });
+          const r = await fetch("/participants/" + bank + "/chaos", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
           return { status: r.status, body: await r.json(), toastLabel: "Chaos Policy" };
         });
       }
       async function runSettlement(btn) {
-        return runAction(btn, "reconOut", "Running settlement", async () => {
-          const r = await fetch("/cycles/" + encodeURIComponent(ACTIVE_CYCLE_ID) + "/run", { method: "POST", headers: p1Headers(), body: "{}" });
+        const res = await runAction(btn, null, "Running settlement", async () => {
+          const r = await fetch("/cycles/" + encodeURIComponent(ACTIVE_CYCLE_ID) + "/run", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
           return { status: r.status, body: await r.json(), toastLabel: "Settlement" };
         });
+        if (res && res.status === 200) {
+          document.getElementById("reconCards").innerHTML =
+            '<div class="kpi-card"><div class="kpi-label">Settlement Version</div><div class="kpi-value">v' + esc(res.body.version ?? 1) + '</div></div><div class="kpi-card"><div class="kpi-label">Zero-Sum Netting</div><div class="kpi-value"><span class="badge ok">BALANCED (₹0.00)</span></div></div>';
+        }
       }
       async function runRecon(btn) {
-        return runAction(btn, "reconOut", "Reconciling", async () => {
-          const r = await fetch("/cycles/" + encodeURIComponent(ACTIVE_CYCLE_ID) + "/reconcile", { method: "POST", headers: p1Headers(), body: "{}" });
+        const res = await runAction(btn, null, "Reconciling", async () => {
+          const r = await fetch("/cycles/" + encodeURIComponent(ACTIVE_CYCLE_ID) + "/reconcile", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
           return { status: r.status, body: await r.json(), toastLabel: "3-Way Recon" };
         });
+        if (res && res.status === 200 && res.body?.summary) {
+          document.getElementById("reconCards").innerHTML =
+            '<div class="kpi-card"><div class="kpi-label">Total Matched</div><div class="kpi-value">' + esc(res.body.summary.by_class?.MATCHED?.count ?? 0) + '</div></div><div class="kpi-card"><div class="kpi-label">Exceptions Opened</div><div class="kpi-value">' + esc(res.body.exceptionsOpened ?? 0) + '</div></div>';
+        }
       }
     `,
   });

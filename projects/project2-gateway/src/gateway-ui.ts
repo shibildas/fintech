@@ -1,224 +1,230 @@
 import { renderFintechShellHtml } from "@fintech/core";
 
 /**
- * Project 2 — Merchant Payment Gateway Interactive Dashboard HTML/JS UI.
+ * Project 2 — Merchant Payment Gateway Product Dashboard UI (Stripe/RazorpayX Style).
  */
 export function renderGatewayUiHtml(): string {
   return renderFintechShellHtml({
-    title: "Project 2 — Merchant Payment Gateway",
-    subtitle:
-      "Browser SubtleCrypto HMAC-SHA256 • Isolated PCI Token Vault • Smart Failover & Webhooks",
+    title: "Merchant Payment Gateway",
+    subtitle: "PCI Token Vault • Smart Acquirer Failover • SubtleCrypto HMAC & Webhooks",
     activePort: 3002,
+    tabs: [
+      { id: "overview", label: "Overview & Ledger" },
+      { id: "checkout", label: "Hosted Checkout" },
+      { id: "acquirers", label: "Acquirers & Chaos", adminOnly: true },
+      { id: "refunds", label: "Refunds & Payouts" },
+      { id: "webhooks", label: "Webhooks & Keys" },
+    ],
+    loginAccounts: [
+      { username: "acme.user", role: "user", label: "Ops User (Checkout, Refunds)" },
+      { username: "acme.admin", role: "admin", label: "Finance Admin (Chaos, Keys)" },
+    ],
     bodyHtml: `
-      <div class="auth-bar">
-        <label>Merchant Key ID (stdout)<input id="gwKeyId" placeholder="rzp_live_..." /></label>
-        <label>API Secret (signed locally via SubtleCrypto)<input id="gwSecret" type="password" placeholder="sec_live_..." /></label>
-        <button onclick="checkParity(this)">Ledger Parity</button>
-        <button class="secondary" onclick="runGrepAudit(this)">PCI Grep Audit</button>
-        <button class="secondary" onclick="rotateKey(this)">Rotate Key</button>
-      </div>
-
-      <div class="card" style="margin-bottom:20px">
-        <div class="row" style="margin-bottom:8px;justify-content:space-between;align-items:center">
-          <span class="badge neutral" id="sigPreview">Last X-Signature: (none yet)</span>
-          <div id="topOutMeta" class="out-meta" style="margin:0"></div>
+      <section id="view-overview" class="view-pane">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-label">Merchant Payable</div><div class="kpi-value" id="kpiPayable">—</div><div class="kpi-sub">Double-Entry Ledger</div></div>
+          <div class="kpi-card"><div class="kpi-label">Rolling Reserve</div><div class="kpi-value" id="kpiReserve">—</div><div class="kpi-sub">10% Holdback</div></div>
+          <div class="kpi-card"><div class="kpi-label">Dashboard Parity</div><div class="kpi-value" id="kpiParity">—</div><div class="kpi-sub">Zero Ledger Drift</div></div>
+          <div class="kpi-card"><div class="kpi-label">PCI Vault Audit</div><div class="kpi-value" id="kpiPci">—</div><div class="kpi-sub">Isolated p2-vault.sqlite</div></div>
         </div>
-        <pre id="topOut" class="out">Ledger Parity, PCI Grep Audit &amp; Key Rotation results appear here.</pre>
-      </div>
-
-      <div class="grid">
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">1</span> Hosted Checkout (Vault Card &amp; UPI)</h2>
-            <p class="hint">Card PANs go directly to p2-vault.sqlite; Gateway only receives opaque tokens.</p>
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:0;">
+            <div><h3>Merchant Health &amp; Compliance Checks</h3><p class="hint" style="margin:0;">Verify ledger-to-dashboard parity and zero raw PAN leaks across SQLite &amp; logs.</p></div>
+            <div class="row" style="margin:0;">
+              <button onclick="checkParity(this)">Refresh Ledger Parity</button>
+              <button class="secondary" onclick="runGrepAudit(this)">Run PCI Grep Audit</button>
+            </div>
           </div>
+        </div>
+      </section>
+
+      <section id="view-checkout" class="view-pane hidden">
+        <div class="card">
+          <h3>Hosted Checkout (PCI Token Vault Card &amp; UPI)</h3>
+          <p class="hint">Card PANs are tokenized directly in <code>p2-vault.sqlite</code>; the Gateway only handles opaque tokens.</p>
           <div class="row">
-            <label>Amount (paise)<input id="ordAmt" type="number" value="150000" /></label>
-            <label>Card PAN (Vault)<input id="cardPan" value="4111111111114242" /></label>
-            <label>3DS OTP<input id="cardOtp" type="password" placeholder="Enter 3DS OTP" /></label>
+            <label>Order Amount (paise)<input id="ordAmt" type="number" value="150000" /></label>
+            <label>Card PAN (Vault)<input id="cardPan" value="4242424242424242" /></label>
+            <label>3DS OTP<input id="cardOtp" type="password" placeholder="Enter 3DS OTP (123456)" /></label>
           </div>
           <div class="row">
             <label>UPI Payer VPA<input id="upiVpa" value="anita@psp1" /></label>
-            <label>UPI PIN<input id="upiPin" type="password" placeholder="Enter UPI PIN" /></label>
+            <label>UPI PIN<input id="upiPin" type="password" placeholder="Enter customer UPI PIN" /></label>
           </div>
           <div class="row">
-            <button onclick="runCardCheckout(this)">Pay with Card</button>
+            <button onclick="runCardCheckout(this)">Pay with Vaulted Card</button>
             <button class="secondary" onclick="runUpiCheckout(this)">Pay with UPI</button>
           </div>
-          <div class="out-wrap">
-            <div id="payOutMeta" class="out-meta"></div>
-            <pre id="payOut" class="out">Enter X-Key-Id &amp; API Secret above, then submit a payment.</pre>
-          </div>
+          <div id="checkoutSummary" style="margin-top:14px;"></div>
         </div>
+      </section>
 
+      <section id="view-acquirers" class="view-pane hidden">
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">2</span> Smart Acquirer Chaos &amp; Failover</h2>
-            <p class="hint">Force ACQ_ALPHA down to watch live failover to ACQ_BETA.</p>
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div><h3>Smart Acquirer Routing &amp; Chaos <span class="badge warn">Admin</span></h3><p class="hint" style="margin:0;">Force ACQ_ALPHA down to watch live failover to ACQ_BETA.</p></div>
+            <button class="secondary" onclick="loadAcqHealth(this)">Refresh Health</button>
           </div>
           <div class="row">
             <label>Acquirer<select id="acqId"><option>ACQ_ALPHA</option><option>ACQ_BETA</option><option>ACQ_GAMMA</option></select></label>
             <label>Failure %<input id="acqFailPct" type="number" value="0" min="0" max="100" /></label>
             <label>Latency (ms)<input id="acqLatency" type="number" value="0" min="0" /></label>
-          </div>
-          <div class="row">
             <button class="danger" onclick="setAcqChaos(this, true)">Force Down</button>
             <button class="secondary" onclick="setAcqChaos(this, false)">Restore Healthy</button>
-            <button class="secondary" onclick="loadAcqHealth(this)">Health Snapshot</button>
           </div>
-          <div class="out-wrap">
-            <div id="acqOutMeta" class="out-meta"></div>
-            <pre id="acqOut" class="out">Acquirer circuit breaker &amp; rolling health metrics.</pre>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Acquirer</th><th>Circuit State</th><th>Success Rate</th><th>Attempts</th></tr></thead>
+              <tbody id="acqTableBody"><tr><td colspan="4" style="color:var(--muted);">Loading acquirer health...</td></tr></tbody>
+            </table>
           </div>
         </div>
+      </section>
 
+      <section id="view-refunds" class="view-pane hidden">
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">3</span> Partial Refunds &amp; T+1 Payouts</h2>
-            <p class="hint">Tests cumulative refund cap (422) and T+1 CSV settlement generation.</p>
-          </div>
+          <h3>Partial Refunds &amp; T+1 Settlement Payouts</h3>
+          <p class="hint">Enforces cumulative refund cap (HTTP 422) and generates T+1 payout CSV settlements.</p>
           <div class="row">
-            <label>Payment ID<input id="refPayId" placeholder="pay_..." /></label>
-            <label>Refund (paise)<input id="refAmt" type="number" value="50000" /></label>
-          </div>
-          <div class="row">
+            <label>Payment ID<input id="refPayId" placeholder="pay_... (auto-filled after checkout)" /></label>
+            <label>Refund Amount (paise)<input id="refAmt" type="number" value="50000" /></label>
             <button onclick="issueRefund(this)">Issue Refund</button>
             <button class="secondary" onclick="runPayout(this)">Run T+1 Payout</button>
           </div>
-          <div class="out-wrap">
-            <div id="refOutMeta" class="out-meta"></div>
-            <pre id="refOut" class="out">Refund and payout ledger responses appear here.</pre>
-          </div>
         </div>
+      </section>
 
+      <section id="view-webhooks" class="view-pane hidden">
         <div class="card">
-          <div class="card-head">
-            <h2><span class="step-pill">4</span> Signed Webhooks &amp; Outage Recovery</h2>
-            <p class="hint">Simulate merchant 500 outages and trigger manual HMAC-signed resends.</p>
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div><h3>Signed Webhooks &amp; API Key Rotation</h3><p class="hint" style="margin:0;">Simulate merchant 500 outages, resend signed webhooks, or rotate keys with overlap.</p></div>
+            <div class="row" style="margin:0;">
+              <button class="danger" onclick="setWebhook500(this, true)">Simulate 500</button>
+              <button class="secondary" onclick="setWebhook500(this, false)">Restore 200</button>
+              <button class="secondary" onclick="loadWebhooks(this)">Refresh</button>
+              <button onclick="rotateKey(this)">Rotate API Key</button>
+            </div>
           </div>
-          <div class="row">
-            <button class="danger" onclick="setWebhook500(this, true)">Simulate 500</button>
-            <button class="secondary" onclick="setWebhook500(this, false)">Restore 200 OK</button>
-            <button class="secondary" onclick="loadWebhooks(this)">Deliveries</button>
-          </div>
-          <div class="row">
-            <label>Delivery ID<input id="whDelId" placeholder="wh_del_..." /></label>
-            <button onclick="resendWh(this)">Manual Resend</button>
-          </div>
-          <div class="out-wrap">
-            <div id="whOutMeta" class="out-meta"></div>
-            <pre id="whOut" class="out">Webhook delivery queue and retry attempts.</pre>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Delivery ID</th><th>Event</th><th>Status</th><th>Attempts</th><th>Action</th></tr></thead>
+              <tbody id="whTableBody"><tr><td colspan="5" style="color:var(--muted);">Click Refresh to load webhook deliveries.</td></tr></tbody>
+            </table>
           </div>
         </div>
-      </div>`,
+      </section>`,
     scriptJs: `
-      async function hmacHex(secret, msg) {
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-        const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
-        return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
-      }
-      async function signedFetch(method, path, bodyObj) {
-        const keyId = document.getElementById("gwKeyId").value.trim();
-        const secret = document.getElementById("gwSecret").value.trim();
-        const rawBody = bodyObj === undefined ? "" : JSON.stringify(bodyObj);
-        const ts = new Date().toISOString();
-        const sig = secret ? await hmacHex(secret, ts + "." + rawBody) : "";
-        const sigEl = document.getElementById("sigPreview");
-        if (sigEl) {
-          sigEl.className = sig ? "badge ok" : "badge warn";
-          sigEl.textContent = sig ? ("Last X-Signature: " + sig.slice(0, 24) + "...") : "Last X-Signature: (unsigned)";
-        }
-        const headers = { "x-key-id": keyId, "x-timestamp": ts, "x-signature": sig };
-        if (bodyObj !== undefined) headers["content-type"] = "application/json";
-        const r = await fetch(path, { method, headers, body: bodyObj === undefined ? undefined : rawBody });
+      window.onAppAuthenticated = () => { checkParity(null); loadAcqHealth(null); loadWebhooks(null); };
+      async function api(method, path, bodyObj) {
+        const headers = bodyObj !== undefined ? { "content-type": "application/json" } : {};
+        const r = await fetch(path, { method, headers, body: bodyObj === undefined ? undefined : JSON.stringify(bodyObj) });
         return { status: r.status, body: await r.json() };
       }
-      async function runCardCheckout(btn) {
-        const cardOtp = document.getElementById("cardOtp").value.trim();
-        if (!cardOtp) {
-          toast("Enter 3DS OTP first", "err");
-          return show("payOut", { error: "Please enter 3DS OTP (see server stdout)" }, { status: 400 });
+      async function checkParity(btn) {
+        const res = await runAction(btn, null, "Checking parity", async () => ({ ...(await api("GET", "/api/ledger/parity")), toastLabel: "Ledger Parity" }));
+        if (res && res.status === 200) {
+          document.getElementById("kpiPayable").textContent = formatInr(res.body.balances?.merchant_payable_paise ?? 0);
+          document.getElementById("kpiReserve").textContent = formatInr(res.body.balances?.merchant_reserve_paise ?? 0);
+          const ok = Boolean(res.body.parity?.matches);
+          document.getElementById("kpiParity").innerHTML = '<span class="badge ' + (ok ? "ok" : "err") + '">' + (ok ? "MATCHED" : "DRIFT") + '</span>';
         }
-        return runAction(btn, "payOut", "Processing card", async () => {
-          const amt = Number(document.getElementById("ordAmt").value);
-          const ord = await signedFetch("POST", "/api/orders", { amountPaise: amt, idempotencyKey: "ui_ord_" + Date.now(), merchantOrderId: "rcpt_" + Date.now() });
-          if (ord.status !== 201) return { ...ord, toastLabel: "Order" };
-          const tokRes = await fetch("/api/vault/tokenize", {
-            method: "POST", headers: { "content-type": "application/json" },
-            body: JSON.stringify({ cardNumber: document.getElementById("cardPan").value, expiry: "12/29", merchantId: ord.body.order.merchant_id })
-          });
-          const tok = await tokRes.json();
-          if (!tokRes.ok) return { status: tokRes.status, body: tok, toastLabel: "Vault Tokenize" };
-          const pay = await signedFetch("POST", "/api/payments", { orderId: ord.body.order.id, method: "CARD", tokenId: tok.token, cardOtp });
-          if (pay.body?.payment?.id) document.getElementById("refPayId").value = pay.body.payment.id;
-          return { status: pay.status, display: { token: tok, payment: pay }, toastLabel: "Card Payment" };
-        });
-      }
-      async function runUpiCheckout(btn) {
-        const upiRawPin = document.getElementById("upiPin").value.trim();
-        if (!upiRawPin) {
-          toast("Enter UPI PIN first", "err");
-          return show("payOut", { error: "Please enter UPI PIN (see server stdout)" }, { status: 400 });
-        }
-        return runAction(btn, "payOut", "Processing UPI", async () => {
-          const amt = Number(document.getElementById("ordAmt").value);
-          const ord = await signedFetch("POST", "/api/orders", { amountPaise: amt, idempotencyKey: "ui_upi_" + Date.now(), merchantOrderId: "rcpt_upi_" + Date.now() });
-          if (ord.status !== 201) return { ...ord, toastLabel: "Order" };
-          const pay = await signedFetch("POST", "/api/payments", {
-            orderId: ord.body.order.id, method: "UPI", upiPayerVpa: document.getElementById("upiVpa").value.trim(), upiRawPin
-          });
-          if (pay.body?.payment?.id) document.getElementById("refPayId").value = pay.body.payment.id;
-          return { ...pay, toastLabel: "UPI Payment" };
-        });
-      }
-      async function setAcqChaos(btn, forceDown) {
-        return runAction(btn, "acqOut", forceDown ? "Forcing down" : "Updating acquirer", async () => {
-          const id = encodeURIComponent(document.getElementById("acqId").value);
-          const technicalFailureRatePercent = Number(document.getElementById("acqFailPct").value) || 0;
-          const latencyMs = Number(document.getElementById("acqLatency").value) || 0;
-          const res = await signedFetch("PUT", "/api/acquirers/" + id + "/chaos", { forceDown, technicalFailureRatePercent, latencyMs });
-          return { ...res, toastLabel: "Acquirer Chaos" };
-        });
-      }
-      async function loadAcqHealth(btn) {
-        return runAction(btn, "acqOut", "Checking health", async () => ({ ...(await signedFetch("GET", "/api/acquirers/health")), toastLabel: "Acquirer Health" }));
       }
       async function runGrepAudit(btn) {
-        return runAction(btn, "topOut", "Running PCI grep", async () => ({ ...(await signedFetch("GET", "/api/pci-grep-audit")), toastLabel: "PCI Grep Audit" }));
+        const res = await runAction(btn, null, "Running PCI audit", async () => ({ ...(await api("GET", "/api/pci-grep-audit")), toastLabel: "PCI Grep Audit" }));
+        if (res && res.status === 200) {
+          const ok = Boolean(res.body.passed);
+          document.getElementById("kpiPci").innerHTML = '<span class="badge ' + (ok ? "ok" : "err") + '">' + (ok ? "0 LEAKS" : "LEAK") + '</span>';
+        }
       }
-      async function checkParity(btn) {
-        return runAction(btn, "topOut", "Checking parity", async () => ({ ...(await signedFetch("GET", "/api/ledger/parity")), toastLabel: "Ledger Parity" }));
+      async function runCardCheckout(btn) {
+        if (!validateFields([
+          { id: "ordAmt", check: V.posInt },
+          { id: "cardPan", check: V.luhn },
+          { id: "cardOtp", check: V.pin }
+        ])) return;
+        const cardOtp = document.getElementById("cardOtp").value.trim();
+        const res = await runAction(btn, null, "Processing card", async () => {
+          const ord = await api("POST", "/api/orders", { amountPaise: Number(document.getElementById("ordAmt").value), idempotencyKey: "ui_ord_" + Date.now(), merchantOrderId: "rcpt_" + Date.now() });
+          if (ord.status !== 201) return { ...ord, toastLabel: "Order" };
+          const tokRes = await fetch("/api/vault/tokenize", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cardNumber: document.getElementById("cardPan").value, expiry: "12/29", merchantId: ord.body.order.merchant_id }) });
+          const tok = await tokRes.json();
+          if (!tokRes.ok) return { status: tokRes.status, body: tok, toastLabel: "Vault Tokenize" };
+          const pay = await api("POST", "/api/payments", { orderId: ord.body.order.id, method: "CARD", tokenId: tok.token, cardOtp });
+          if (pay.body?.payment?.id) document.getElementById("refPayId").value = pay.body.payment.id;
+          return { status: pay.status, body: { token: tok, payment: pay.body }, toastLabel: "Card Checkout" };
+        });
+        if (res && res.status === 200 && res.body?.payment?.payment) {
+          const p = res.body.payment.payment;
+          document.getElementById("checkoutSummary").innerHTML =
+            '<div class="kpi-grid"><div class="kpi-card"><div class="kpi-label">Payment ID</div><div class="kpi-value mono" style="font-size:14px;">' + esc(p.id) + '</div></div><div class="kpi-card"><div class="kpi-label">Acquirer Used</div><div class="kpi-value">' + esc(p.acquirer_id) + '</div></div><div class="kpi-card"><div class="kpi-label">State</div><div class="kpi-value"><span class="badge ' + (p.state === "CAPTURED" ? "ok" : "err") + '">' + esc(p.state) + '</span></div></div></div>';
+          checkParity(null); loadWebhooks(null);
+        }
+      }
+      async function runUpiCheckout(btn) {
+        if (!validateFields([
+          { id: "ordAmt", check: V.posInt },
+          { id: "upiVpa", check: V.vpa },
+          { id: "upiPin", check: V.pin }
+        ])) return;
+        const upiRawPin = document.getElementById("upiPin").value.trim();
+        const res = await runAction(btn, null, "Processing UPI", async () => {
+          const ord = await api("POST", "/api/orders", { amountPaise: Number(document.getElementById("ordAmt").value), idempotencyKey: "ui_upi_" + Date.now(), merchantOrderId: "rcpt_upi_" + Date.now() });
+          if (ord.status !== 201) return { ...ord, toastLabel: "Order" };
+          const pay = await api("POST", "/api/payments", { orderId: ord.body.order.id, method: "UPI", upiPayerVpa: document.getElementById("upiVpa").value.trim(), upiRawPin });
+          if (pay.body?.payment?.id) document.getElementById("refPayId").value = pay.body.payment.id;
+          return { ...pay, toastLabel: "UPI Checkout" };
+        });
+        if (res && res.status === 200) { checkParity(null); loadWebhooks(null); }
+      }
+      async function loadAcqHealth(btn) {
+        const res = await runAction(btn, null, "Refreshing acquirers", async () => ({ ...(await api("GET", "/api/acquirers/health")), toastLabel: "Acquirer Health" }));
+        if (res && res.status === 200) {
+          const list = res.body?.snapshots || [];
+          document.getElementById("acqTableBody").innerHTML = list.map(a => {
+            const cls = a.circuitState === "CLOSED" ? "ok" : a.circuitState === "HALF_OPEN" ? "warn" : "err";
+            return '<tr><td><strong>' + esc(a.acquirerId) + '</strong></td><td><span class="badge ' + cls + '">' + esc(a.circuitState) + '</span></td><td>' + esc(a.successRatePercent ?? 100) + '%</td><td>' + esc(a.totalAttempts ?? 0) + '</td></tr>';
+          }).join("");
+        }
+      }
+      async function setAcqChaos(btn, forceDown) {
+        const res = await runAction(btn, null, forceDown ? "Forcing down" : "Restoring", async () => {
+          const id = encodeURIComponent(document.getElementById("acqId").value);
+          return { ...(await api("PUT", "/api/acquirers/" + id + "/chaos", { forceDown, technicalFailureRatePercent: Number(document.getElementById("acqFailPct").value) || 0, latencyMs: Number(document.getElementById("acqLatency").value) || 0 })), toastLabel: "Acquirer Chaos" };
+        });
+        if (res && res.status === 200) loadAcqHealth(null);
       }
       async function issueRefund(btn) {
-        return runAction(btn, "refOut", "Issuing refund", async () => ({
-          ...(await signedFetch("POST", "/api/refunds", {
-            paymentId: document.getElementById("refPayId").value.trim(),
-            amountPaise: Number(document.getElementById("refAmt").value),
-            idempotencyKey: "ui_ref_" + Date.now()
-          })),
+        const res = await runAction(btn, null, "Issuing refund", async () => ({
+          ...(await api("POST", "/api/refunds", { paymentId: document.getElementById("refPayId").value.trim(), amountPaise: Number(document.getElementById("refAmt").value), idempotencyKey: "ui_ref_" + Date.now() })),
           toastLabel: "Refund"
         }));
+        if (res && res.status === 201) checkParity(null);
       }
       async function runPayout(btn) {
-        return runAction(btn, "refOut", "Generating payout", async () => ({ ...(await signedFetch("POST", "/api/payouts/run", {})), toastLabel: "T+1 Payout" }));
+        const res = await runAction(btn, null, "Generating payout", async () => ({ ...(await api("POST", "/api/payouts/run", {})), toastLabel: "T+1 Payout" }));
+        if (res && res.status === 200) checkParity(null);
       }
       async function setWebhook500(btn, flag) {
-        return runAction(btn, "whOut", "Updating receiver", async () => ({ ...(await signedFetch("PUT", "/api/webhooks/demo-receiver", { simulateServer500: flag })), toastLabel: "Webhook Receiver" }));
+        return runAction(btn, null, "Updating receiver", async () => ({ ...(await api("PUT", "/api/webhooks/demo-receiver", { simulateServer500: flag })), toastLabel: "Webhook Receiver" }));
       }
       async function loadWebhooks(btn) {
-        return runAction(btn, "whOut", "Loading deliveries", async () => ({ ...(await signedFetch("GET", "/api/webhooks/deliveries")), toastLabel: "Webhooks" }));
-      }
-      async function resendWh(btn) {
-        const id = document.getElementById("whDelId").value.trim();
-        if (!id) {
-          toast("Enter Delivery ID first", "err");
-          return show("whOut", { error: "Please enter a Delivery ID to resend" }, { status: 400 });
+        const res = await runAction(btn, null, "Loading webhooks", async () => ({ ...(await api("GET", "/api/webhooks/deliveries")), toastLabel: "Webhooks" }));
+        if (res && res.status === 200) {
+          const rows = res.body?.deliveries || [];
+          document.getElementById("whTableBody").innerHTML = rows.length
+            ? rows.slice(0, 15).map(d => {
+                const cls = d.status === "DELIVERED" ? "ok" : d.status === "RETRY_SCHEDULED" ? "warn" : "err";
+                return '<tr><td class="mono">' + esc(d.id) + '</td><td class="mono">' + esc(d.event_type) + '</td><td><span class="badge ' + cls + '">' + esc(d.status) + '</span></td><td>' + esc(d.attempt_count) + '</td><td><button class="secondary" style="padding:5px 10px;font-size:12px;" onclick="resendWhById(this, \\'' + esc(d.id) + '\\')">Resend</button></td></tr>';
+              }).join("")
+            : '<tr><td colspan="5" style="color:var(--muted);">No webhook deliveries yet. Run a checkout first.</td></tr>';
         }
-        return runAction(btn, "whOut", "Resending", async () => ({ ...(await signedFetch("POST", "/api/webhooks/deliveries/" + encodeURIComponent(id) + "/resend", {})), toastLabel: "Webhook Resend" }));
+      }
+      async function resendWhById(btn, id) {
+        const res = await runAction(btn, null, "Resending", async () => ({ ...(await api("POST", "/api/webhooks/deliveries/" + encodeURIComponent(id) + "/resend", {})), toastLabel: "Webhook Resend" }));
+        if (res && res.status === 200) loadWebhooks(null);
       }
       async function rotateKey(btn) {
-        return runAction(btn, "topOut", "Rotating key", async () => ({ ...(await signedFetch("POST", "/api/keys/rotate", { overlapWindowMs: 900000 })), toastLabel: "Key Rotation" }));
+        return runAction(btn, null, "Rotating key", async () => ({ ...(await api("POST", "/api/keys/rotate", { overlapWindowMs: 900000 })), toastLabel: "Key Rotation" }));
       }
     `,
   });

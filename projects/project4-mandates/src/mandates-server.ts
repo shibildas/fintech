@@ -6,6 +6,10 @@ import {
   timingSafeTokenEqual,
   writeJsonResponse,
   writeHtmlResponse,
+  validateAnchorDay,
+  validatePinOrOtp,
+  validatePositivePaise,
+  validateVpa,
 } from "@fintech/core";
 import type { MandateRail } from "./mandate-service.ts";
 import { renderMandatesUiHtml } from "./mandates-ui.ts";
@@ -27,14 +31,19 @@ export class MandatesHttpServer {
     this.ctx = ctx;
   }
 
-  private requireMerchantToken(req: http.IncomingMessage): void {
+  private requireMerchantAuth(req: http.IncomingMessage): { uiRole: "user" | "admin" } {
+    const session = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+    if (session) {
+      return { uiRole: session.role };
+    }
     const token = String(req.headers["x-merchant-token"] ?? "").trim();
     if (!timingSafeTokenEqual(token, this.ctx.merchantToken)) {
       throw Object.assign(
-        new Error("Unauthorized (HTTP 401): Missing or invalid X-Merchant-Token"),
+        new Error("Unauthorized (HTTP 401): Missing session cookie or X-Merchant-Token"),
         { statusCode: 401 }
       );
     }
+    return { uiRole: "admin" };
   }
 
   public createHttpServer(): http.Server {
@@ -71,7 +80,34 @@ export class MandatesHttpServer {
         }
 
         const { json } = await readRawAndJsonBody(req);
-        this.requireMerchantToken(req);
+
+        // UI Session Auth (scrypt hashed passwords in SQLite + HttpOnly cookie)
+        if (method === "GET" && pathname === "/api/auth/me") {
+          const user = this.ctx.uiAuth.getSessionFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { authenticated: Boolean(user), user }, origin);
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/login") {
+          const out = this.ctx.uiAuth.login(
+            String(json.username ?? ""),
+            String(json.password ?? "")
+          );
+          if (!out) {
+            writeJsonResponse(res, 401, { error: "Invalid username or password" }, origin);
+            return;
+          }
+          writeJsonResponse(res, 200, { user: out.user }, origin, {
+            "set-cookie": out.setCookieHeader,
+          });
+          return;
+        }
+        if (method === "POST" && pathname === "/api/auth/logout") {
+          const clearCookie = this.ctx.uiAuth.logoutFromHeaders(req.headers);
+          writeJsonResponse(res, 200, { loggedOut: true }, origin, { "set-cookie": clearCookie });
+          return;
+        }
+
+        const auth = this.requireMerchantAuth(req);
 
         if (method === "GET" && pathname === "/api/clock") {
           const now = this.ctx.clock.now();
@@ -83,6 +119,12 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/clock/advance") {
+          if (auth.uiRole !== "admin") {
+            throw Object.assign(
+              new Error("Forbidden (HTTP 403): Admin role required to advance Fake Clock"),
+              { statusCode: 403 }
+            );
+          }
           if (json.setIso !== undefined) {
             const isoStr = String(json.setIso);
             if (Number.isNaN(Date.parse(isoStr))) {
@@ -122,18 +164,27 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/mandates") {
+          const payerVpa = validateVpa(json.payerVpa ?? "anita@psp1", "payerVpa");
+          const maxAmountPaise = validatePositivePaise(
+            json.maxAmountPaise ?? 100_000,
+            "maxAmountPaise"
+          );
+          const monthlyAggregateCapPaise = validatePositivePaise(
+            json.monthlyAggregateCapPaise ?? 300_000,
+            "monthlyAggregateCapPaise"
+          );
           writeJsonResponse(
             res,
             201,
             this.ctx.mandates.createMandate({
               merchantId: this.ctx.merchantId,
               customerId: String(json.customerId ?? "cust_anita"),
-              payerVpa: json.payerVpa ? String(json.payerVpa) : "anita@psp1",
+              payerVpa,
               bankId: String(json.bankId ?? "BANKA"),
               accountNumberMasked: String(json.accountNumberMasked ?? "XXXX4521"),
               rail: (json.rail as MandateRail) ?? "UPI_AUTOPAY",
-              maxAmountPaise: Number(json.maxAmountPaise ?? 100_000),
-              monthlyAggregateCapPaise: Number(json.monthlyAggregateCapPaise ?? 300_000),
+              maxAmountPaise,
+              monthlyAggregateCapPaise,
               validUntilIso: String(json.validUntilIso ?? "2029-12-31T00:00:00.000Z"),
               now: this.ctx.clock.now(),
             }),
@@ -144,12 +195,13 @@ export class MandatesHttpServer {
 
         const mAuth = pathname.match(/^\/api\/mandates\/([^/]+)\/authorize$/);
         if (method === "POST" && mAuth) {
+          const authCredential = validatePinOrOtp(json.authCredential, "authCredential");
           writeJsonResponse(
             res,
             200,
             this.ctx.mandates.authorizeMandate({
               mandateId: decodeURIComponent(mAuth[1]),
-              authCredential: String(json.authCredential ?? ""),
+              authCredential,
               now: this.ctx.clock.now(),
             }),
             origin
@@ -204,6 +256,7 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/plans") {
+          const amountPaise = validatePositivePaise(json.amountPaise ?? 49_900, "amountPaise");
           writeJsonResponse(
             res,
             201,
@@ -211,7 +264,7 @@ export class MandatesHttpServer {
               merchantId: this.ctx.merchantId,
               name: String(json.name ?? "SaaS Pro Monthly"),
               interval: (json.interval as "MONTHLY" | "YEARLY") ?? "MONTHLY",
-              amountPaise: Number(json.amountPaise ?? 49_900),
+              amountPaise,
             }),
             origin
           );
@@ -229,12 +282,13 @@ export class MandatesHttpServer {
         }
 
         if (method === "POST" && pathname === "/api/subscriptions") {
+          const anchorDay = validateAnchorDay(json.anchorDay ?? 31);
           const sub = this.ctx.subs.createSubscription({
             merchantId: this.ctx.merchantId,
             customerId: String(json.customerId ?? "cust_anita"),
             planId: String(json.planId ?? ""),
             mandateId: String(json.mandateId ?? ""),
-            anchorDay: json.anchorDay ? Number(json.anchorDay) : 31,
+            anchorDay,
             startYear: json.startYear ? Number(json.startYear) : 2026,
             startMonth1Based: json.startMonth1Based ? Number(json.startMonth1Based) : 1,
           });

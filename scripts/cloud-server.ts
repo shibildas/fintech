@@ -150,14 +150,16 @@ async function main(): Promise<void> {
 
   console.log(`\nFintech Stack Cloud Server listening on http://0.0.0.0:${PUBLIC_PORT}/`);
   console.log(
-    `[p1:switch]   /p1/  (X-Admin-Token: ${p1Token} | Seeded PINs: anita=1234, rahul=5678)`
+    `[p1:switch]   /p1/  UI Login: switch.ops / SwitchUser#2026 (user) | switch.admin / SwitchAdmin#2026 (admin) | X-Admin-Token: ${p1Token}`
   );
   console.log(
-    `[p2:gateway]  /p2/  (X-Key-Id: ${p2Ctx.seededKeyId} | API Secret: ${p2Ctx.seededApiSecret})`
+    `[p2:gateway]  /p2/  UI Login: acme.user / GateUser#2026 (user) | acme.admin / GateAdmin#2026 (admin) | X-Key-Id: ${p2Ctx.seededKeyId}`
   );
-  console.log(`[p3:consumer] /p3/  (X-Ops-Token: ${p3Ctx.opsToken} | Mock SMS OTP: 123456)`);
   console.log(
-    `[p4:mandates] /p4/  (X-Merchant-Token: ${p4Ctx.merchantToken} | AutoPay PIN: 1234 | e-NACH OTP: 654321)\n`
+    `[p3:consumer] /p3/  UI Login: anita.user / ConsUser#2026 (user) | risk.admin / RiskAdmin#2026 (admin) | X-Ops-Token: ${p3Ctx.opsToken}`
+  );
+  console.log(
+    `[p4:mandates] /p4/  UI Login: billing.user / MandUser#2026 (user) | billing.admin / MandAdmin#2026 (admin) | X-Merchant-Token: ${p4Ctx.merchantToken}\n`
   );
 
   const allServers = [publicServer, s1, s2, s3, s4];

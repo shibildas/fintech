@@ -77,6 +77,15 @@ npm run start:p4   # Mandates & Fake Clock  (http://127.0.0.1:3004)
 npm run reset:data
 ```
 
+### UI Login Accounts (Salted `scrypt` Hashed in SQLite)
+
+| Dashboard                                  | User Account (`role: user`)      | Admin Account (`role: admin`)       |
+| :----------------------------------------- | :------------------------------- | :---------------------------------- |
+| **P1 Switch** (`/p1/` or `:3001`)          | `switch.ops` / `SwitchUser#2026` | `switch.admin` / `SwitchAdmin#2026` |
+| **P2 Gateway** (`/p2/` or `:3002`)         | `acme.user` / `GateUser#2026`    | `acme.admin` / `GateAdmin#2026`     |
+| **P3 Consumer & Risk** (`/p3/` or `:3003`) | `anita.user` / `ConsUser#2026`   | `risk.admin` / `RiskAdmin#2026`     |
+| **P4 Mandates** (`/p4/` or `:3004`)        | `billing.user` / `MandUser#2026` | `billing.admin` / `MandAdmin#2026`  |
+
 ### Run Quality Gates & Tests
 
 ```bash
