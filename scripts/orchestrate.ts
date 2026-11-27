@@ -114,6 +114,16 @@ function startMandatesServer(port: number): Promise<http.Server> {
 }
 
 async function main(): Promise<void> {
+  // On cloud PaaS hosts (Render / HF Spaces / Koyeb) where a single public $PORT is injected,
+  // automatically delegate to the single-port 0.0.0.0:$PORT cloud router.
+  if (
+    (process.env.RENDER === "true" || process.env.CLOUD_SINGLE_PORT === "true") &&
+    !process.argv.some((a) => a.startsWith("--only="))
+  ) {
+    await import("./cloud-server.ts");
+    return;
+  }
+
   ensureDataDir(DATA_DIR);
   const targets = parseTargets(process.argv.slice(2));
   const switchPort = Number(process.env.SWITCH_PORT ?? 3001);
