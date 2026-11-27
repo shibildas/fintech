@@ -124,15 +124,31 @@ async function main(): Promise<void> {
 
   console.log(`\nFintech stack orchestrator ready (SQLite persisted under ${DATA_DIR}). Press Ctrl+C to stop.`);
 
+  let isShuttingDown = false;
   const shutdown = (signal: string) => {
-    console.log(`\nReceived ${signal}, shutting down ${servers.length} server(s)...`);
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`\nReceived ${signal}, gracefully shutting down ${servers.length} server(s)...`);
     let pending = servers.length;
     if (pending === 0) process.exit(0);
+
+    const forceTimer = setTimeout(() => {
+      for (const server of servers) {
+        server.closeAllConnections?.();
+      }
+      process.exit(0);
+    }, 5_000);
+    forceTimer.unref();
+
     for (const server of servers) {
       server.close(() => {
         pending -= 1;
-        if (pending === 0) process.exit(0);
+        if (pending === 0) {
+          clearTimeout(forceTimer);
+          process.exit(0);
+        }
       });
+      server.closeIdleConnections?.();
     }
   };
 
